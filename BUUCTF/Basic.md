@@ -1,6 +1,6 @@
 # Basic
 
-`更新时间：2023-11-22`
+`更新时间：2023-11-26`
 
 注释解释：
 
@@ -127,4 +127,152 @@ ssh -p <port> <username>@<hostname>
 用用户名和密码进行登录，得到flag
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/UUTNHJW2G46LF_0C)]K5ES9.png?raw=true">
+
+
+## Upload-Labs-Linux
+
+打开网站，内含20道文件上传小题目
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/LLU]]W%YBJ}`$LK7{S77HZ7.png?raw=true">
+
+#### Pass-01
+
+直接上传失败，提示文件类型错误
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/OY0RMT0OH9SC74XMO~SWN6U.png?raw=true">
+
+查看源码，仅对上传的文件类型进行验证
+
+```php
+function checkFile() {
+    var file = document.getElementsByName('upload_file')[0].value;
+    if (file == null || file == "") {
+        alert("请选择要上传的文件!");
+        return false;
+    }
+    //定义允许上传的文件类型
+    var allow_ext = ".jpg|.png|.gif";
+    //提取上传文件的类型
+    var ext_name = file.substring(file.lastIndexOf("."));
+    //判断上传文件类型是否允许上传
+    if (allow_ext.indexOf(ext_name + "|") == -1) {
+        var errMsg = "该文件不允许上传，请上传" + allow_ext + "类型的文件,当前文件类型为：" + ext_name;
+        alert(errMsg);
+        return false;
+    }
+}
+```
+
+将php文件格式更改为jpg,再通过抓包修改回来
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/KEX{OI9KH]%{(K`FZFDPT~V.png?raw=true">
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/W6CWENMBCJNWF[PV3)E]5GX.png?raw=true">
+
+上传成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/M}QWOGX`A@G4BMK%6U0@09G.png?raw=true">
+
+#### Pass-02
+
+直接看代码，同样是仅对上传的文件类型进行验证，可以使用与第一种相同的方法，此处省略
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        if (($_FILES['upload_file']['type'] == 'image/jpeg') || ($_FILES['upload_file']['type'] == 'image/png') || ($_FILES['upload_file']['type'] == 'image/gif')) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH . '/' . $_FILES['upload_file']['name']            
+            if (move_uploaded_file($temp_file, $img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '文件类型不正确，请重新上传！';
+        }
+    } else {
+        $msg = UPLOAD_PATH.'文件夹不存在,请手工创建！';
+    }
+}
+
+```
+
+#### Pass-03
+
+查看源码，对上传后的文件类型进行了验证，后缀为 `.asp` `.aspx` `.php` `.jsp` 的文件均不能上传
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array('.asp','.aspx','.php','.jsp');
+        $file_name = trim($_FILES['upload_file']['name']);
+        $file_name = deldot($file_name);//删除文件名末尾的点
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = strtolower($file_ext); //转换为小写
+        $file_ext = str_ireplace('::$DATA', '', $file_ext);//去除字符串::$DATA
+        $file_ext = trim($file_ext); //收尾去空
+
+        if(!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.date("YmdHis").rand(1000,9999).$file_ext;            
+            if (move_uploaded_file($temp_file,$img_path)) {
+                 $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '不允许上传.asp,.aspx,.php,.jsp后缀文件！';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+将文件后缀改为 `.php3` `.php5` `.phtml` 
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/4N[{%(M~@0IB6VE~P{5]02T.png?raw=true">
+
+上传成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/M}QWOGX`A@G4BMK%6U0@09G.png?raw=true">
+
+#### Pass-04
+
+查看源码，基本对所有可能的文件格式进行了过滤
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array(".php",".php5",".php4",".php3",".php2","php1",".html",".htm",".phtml",".pht",".pHp",".pHp5",".pHp4",".pHp3",".pHp2","pHp1",".Html",".Htm",".pHtml",".jsp",".jspa",".jspx",".jsw",".jsv",".jspf",".jtml",".jSp",".jSpx",".jSpa",".jSw",".jSv",".jSpf",".jHtml",".asp",".aspx",".asa",".asax",".ascx",".ashx",".asmx",".cer",".aSp",".aSpx",".aSa",".aSax",".aScx",".aShx",".aSmx",".cEr",".sWf",".swf");
+        $file_name = trim($_FILES['upload_file']['name']);
+        $file_name = deldot($file_name);//删除文件名末尾的点
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = strtolower($file_ext); //转换为小写
+        $file_ext = str_ireplace('::$DATA', '', $file_ext);//去除字符串::$DATA
+        $file_ext = trim($file_ext); //收尾去空
+
+        if (!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.$file_name;
+            if (move_uploaded_file($temp_file, $img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '此文件不允许上传!';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
 
