@@ -478,3 +478,316 @@ if (isset($_POST['submit'])) {
 
 *注：因篇幅过长，此处不为 `::$DATA` 做解释，请<a href="https://learn.microsoft.com/zh-cn/windows/win32/fileio/file-streams">点击此处</a>前往Microsoft官方文档*
 
+#### Pass-09
+
+观察代码，上文所有的方式都被过滤
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array(".php",".php5",".php4",".php3",".php2",".html",".htm",".phtml",".pht",".pHp",".pHp5",".pHp4",".pHp3",".pHp2",".Html",".Htm",".pHtml",".jsp",".jspa",".jspx",".jsw",".jsv",".jspf",".jtml",".jSp",".jSpx",".jSpa",".jSw",".jSv",".jSpf",".jHtml",".asp",".aspx",".asa",".asax",".ascx",".ashx",".asmx",".cer",".aSp",".aSpx",".aSa",".aSax",".aScx",".aShx",".aSmx",".cEr",".sWf",".swf",".htaccess");
+        $file_name = trim($_FILES['upload_file']['name']);
+        $file_name = deldot($file_name);//删除文件名末尾的点
+        $file_ext = strrchr($file_name, '.');
+        $file_ext = strtolower($file_ext); //转换为小写
+        $file_ext = str_ireplace('::$DATA', '', $file_ext);//去除字符串::$DATA
+        $file_ext = trim($file_ext); //首尾去空
+        
+        if (!in_array($file_ext, $deny_ext)) {
+            $temp_file = $_FILES['upload_file']['tmp_name'];
+            $img_path = UPLOAD_PATH.'/'.$file_name;
+            if (move_uploaded_file($temp_file, $img_path)) {
+                $is_upload = true;
+            } else {
+                $msg = '上传出错！';
+            }
+        } else {
+            $msg = '此文件类型不允许上传！';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+鉴于服务器为Windows系统，可以尝试在文件后缀中输入一些特殊字符
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/P4BT817QP_$}D7@4VZ0TKKT.png?raw=true">
+
+我们把文件后缀改为 `.php<`
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/258ZN89([3WZ$39H9NQ@]7I.png?raw=true">
+
+上传成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/N[EM7WJZ{X4B2DF9Y]Z9NU7.png?raw=true">
+
+#### Pass-10
+
+观察代码，将黑名单后缀进行删除，但是只执行一次，可以使用双层后缀，将后缀改为 `.pphphp` ，此题省略
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])) {
+    if (file_exists(UPLOAD_PATH)) {
+        $deny_ext = array("php","php5","php4","php3","php2","html","htm","phtml","pht","jsp","jspa","jspx","jsw","jsv","jspf","jtml","asp","aspx","asa","asax","ascx","ashx","asmx","cer","swf","htaccess");
+
+        $file_name = trim($_FILES['upload_file']['name']);
+        //此处将$deny_ext内的内容替换为空
+        $file_name = str_ireplace($deny_ext,"", $file_name);
+        $temp_file = $_FILES['upload_file']['tmp_name'];
+        $img_path = UPLOAD_PATH.'/'.$file_name;        
+        if (move_uploaded_file($temp_file, $img_path)) {
+            $is_upload = true;
+        } else {
+            $msg = '上传出错！';
+        }
+    } else {
+        $msg = UPLOAD_PATH . '文件夹不存在,请手工创建！';
+    }
+}
+```
+
+#### Pass-13
+
+观察代码，白名单机制，只检查了2字节数据
+
+```php
+function getReailFileType($filename){
+    $file = fopen($filename, "rb");
+    $bin = fread($file, 2); //只读2字节
+    fclose($file);
+    $strInfo = @unpack("C2chars", $bin);    
+    $typeCode = intval($strInfo['chars1'].$strInfo['chars2']);    
+    $fileType = '';    
+    switch($typeCode){      
+        case 255216:            
+            $fileType = 'jpg';
+            break;
+        case 13780:            
+            $fileType = 'png';
+            break;        
+        case 7173:            
+            $fileType = 'gif';
+            break;
+        default:            
+            $fileType = 'unknown';
+        }    
+        return $fileType;
+}
+
+$is_upload = false;
+$msg = null;
+if(isset($_POST['submit'])){
+    $temp_file = $_FILES['upload_file']['tmp_name'];
+    $file_type = getReailFileType($temp_file);
+
+    if($file_type == 'unknown'){
+        $msg = "文件未知，上传失败！";
+    }else{
+        $img_path = UPLOAD_PATH."/".rand(10, 99).date("YmdHis").".".$file_type;
+        if(move_uploaded_file($temp_file,$img_path)){
+            $is_upload = true;
+        } else {
+            $msg = "上传出错！";
+        }
+    }
+}
+```
+
+直接上传图片马即可
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/PUA9BZBIVZ~QH]0~73VDKJR.png?raw=true">
+
+使用文件包含漏洞查看，上传成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/IY$]_[)T`E_GQ[R]_C]AY96.png?raw=true">
+
+#### Pass-14
+
+查看代码，使用getimagesize()函数获取上传图片的大小及相关信息，成功返回一个数组，失败则返回一条错误信息，所以只用一个可以正常打开的完整图片马即可，此题省略
+
+```php
+function isImage($filename){
+    $types = '.jpeg|.png|.gif';
+    if(file_exists($filename)){
+        $info = getimagesize($filename);
+        $ext = image_type_to_extension($info[2]);
+        if(stripos($types,$ext)>=0){
+            return $ext;
+        }else{
+            return false;
+        }
+    }else{
+        return false;
+    }
+}
+
+$is_upload = false;
+$msg = null;
+if(isset($_POST['submit'])){
+    $temp_file = $_FILES['upload_file']['tmp_name'];
+    $res = isImage($temp_file);
+    if(!$res){
+        $msg = "文件未知，上传失败！";
+    }else{
+        $img_path = UPLOAD_PATH."/".rand(10, 99).date("YmdHis").$res;
+        if(move_uploaded_file($temp_file,$img_path)){
+            $is_upload = true;
+        } else {
+            $msg = "上传出错！";
+        }
+    }
+}
+
+```
+
+#### Pass-15
+
+观察代码，使用exif_imagetype()读取文件第一个字节并检查其签名，直接上传图片马即可，此题省略
+
+```php
+function isImage($filename){
+    //需要开启php_exif模块
+    $image_type = exif_imagetype($filename);
+    switch ($image_type) {
+        case IMAGETYPE_GIF:
+            return "gif";
+            break;
+        case IMAGETYPE_JPEG:
+            return "jpg";
+            break;
+        case IMAGETYPE_PNG:
+            return "png";
+            break;    
+        default:
+            return false;
+            break;
+    }
+}
+
+$is_upload = false;
+$msg = null;
+if(isset($_POST['submit'])){
+    $temp_file = $_FILES['upload_file']['tmp_name'];
+    $res = isImage($temp_file);
+    if(!$res){
+        $msg = "文件未知，上传失败！";
+    }else{
+        $img_path = UPLOAD_PATH."/".rand(10, 99).date("YmdHis").".".$res;
+        if(move_uploaded_file($temp_file,$img_path)){
+            $is_upload = true;
+        } else {
+            $msg = "上传出错！";
+        }
+    }
+}
+```
+
+#### Pass-16
+
+观察代码，对上传的图片进行二次生成，像某些网站的不同大小的头像就是通过这个方式生成，但是不改变图片内容，所以直接上传即可，此题省略
+
+```php
+$is_upload = false;
+$msg = null;
+if (isset($_POST['submit'])){
+    // 获得上传文件的基本信息，文件名，类型，大小，临时文件路径
+    $filename = $_FILES['upload_file']['name'];
+    $filetype = $_FILES['upload_file']['type'];
+    $tmpname = $_FILES['upload_file']['tmp_name'];
+
+    $target_path=UPLOAD_PATH.'/'.basename($filename);
+
+    // 获得上传文件的扩展名
+    $fileext= substr(strrchr($filename,"."),1);
+
+    //判断文件后缀与类型，合法才进行上传操作
+    if(($fileext == "jpg") && ($filetype=="image/jpeg")){
+        if(move_uploaded_file($tmpname,$target_path)){
+            //使用上传的图片生成新的图片
+            $im = imagecreatefromjpeg($target_path);
+
+            if($im == false){
+                $msg = "该文件不是jpg格式的图片！";
+                @unlink($target_path);
+            }else{
+                //给新图片指定文件名
+                srand(time());
+                $newfilename = strval(rand()).".jpg";
+                //显示二次渲染后的图片（使用用户上传图片生成的新图片）
+                $img_path = UPLOAD_PATH.'/'.$newfilename;
+                imagejpeg($im,$img_path);
+                @unlink($target_path);
+                $is_upload = true;
+            }
+        } else {
+            $msg = "上传出错！";
+        }
+
+    }else if(($fileext == "png") && ($filetype=="image/png")){
+        if(move_uploaded_file($tmpname,$target_path)){
+            //使用上传的图片生成新的图片
+            $im = imagecreatefrompng($target_path);
+
+            if($im == false){
+                $msg = "该文件不是png格式的图片！";
+                @unlink($target_path);
+            }else{
+                 //给新图片指定文件名
+                srand(time());
+                $newfilename = strval(rand()).".png";
+                //显示二次渲染后的图片（使用用户上传图片生成的新图片）
+                $img_path = UPLOAD_PATH.'/'.$newfilename;
+                imagepng($im,$img_path);
+
+                @unlink($target_path);
+                $is_upload = true;               
+            }
+        } else {
+            $msg = "上传出错！";
+        }
+
+    }else if(($fileext == "gif") && ($filetype=="image/gif")){
+        if(move_uploaded_file($tmpname,$target_path)){
+            //使用上传的图片生成新的图片
+            $im = imagecreatefromgif($target_path);
+            if($im == false){
+                $msg = "该文件不是gif格式的图片！";
+                @unlink($target_path);
+            }else{
+                //给新图片指定文件名
+                srand(time());
+                $newfilename = strval(rand()).".gif";
+                //显示二次渲染后的图片（使用用户上传图片生成的新图片）
+                $img_path = UPLOAD_PATH.'/'.$newfilename;
+                imagegif($im,$img_path);
+
+                @unlink($target_path);
+                $is_upload = true;
+            }
+        } else {
+            $msg = "上传出错！";
+        }
+    }else{
+        $msg = "只允许上传后缀为.jpg|.png|.gif的图片文件！";
+    }
+}
+
+```
+
+**下面开始获取flag**
+
+获取文件路径，使用蚁剑连接，密码就是一句话木马里的参数名，蚁剑通过这个参数传递代码
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/%5)23T5M`)UELBAX0I`6U}J.png?raw=true">
+
+返回根目录，发现flag文件，打开得到flag
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/$]OMJ{]TD@7CME)WH0{@R8B.png?raw=true">
+
+## BUU CODE REVIEW 1
+
