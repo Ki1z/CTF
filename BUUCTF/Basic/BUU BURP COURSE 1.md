@@ -14,7 +14,7 @@
 
 在ModHeader中添加几行Request Hearder
 
-> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/`E75}Z25YOVH38%0EQHNWQW.png?raw=true">
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/1.png?raw=true">
 
 **2. 使用BurpSuite**
 
