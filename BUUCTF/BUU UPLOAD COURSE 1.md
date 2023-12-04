@@ -1,2 +1,0 @@
-# BUU UPLOAD COURSE 1
-

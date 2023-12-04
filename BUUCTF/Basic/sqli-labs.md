@@ -28,7 +28,7 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/E89DYY@949HQLD%4$NY[1NX.png?raw=true">
 
-输入 `?id=1' %23` 成功，确定存在注入点，且单引号闭合
+输入 `?id=1' %23` 成功，确定存在注入点，字符型注入，单引号闭合
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/0UK$8ZD7AI~U2L7EJTT`@LW.png?raw=true">
 
@@ -89,4 +89,52 @@
 获取到管理员账号密码，注入成功
 
 ### Less-2
+
+封面和Less-1一样，先开始判断注入点，输入 `?id=1 and 1=1` ，成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/`5$2$@SA}Y8N1SDBUIWPCL0.png?raw=true">
+
+输入 `?id=1 and 1=2` 无结果
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/7PMI5L94B44DS0F)073A78T.png?raw=true">
+
+输入 `?id=1'` 报错
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/ADPA9(ET3R5O@U2FQM3{{U9.png?raw=true">
+
+输入 `?id=1' %23` 报错，确定存在注入点，数字型注入
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/VEJ~XGGIZ_B{W)X)8PJ8}1P.png?raw=true">
+
+下面过程和Less-1一样，省略
+
+*注：此题注入语句为 `?id=0 <SQL Injection Statement>`* 
+
+### Less-3
+
+开始判断注入点，下面直接公布结论
+
+- `?id=1 and 1=1` 成功
+
+- `?id=1 and 1=2` 成功
+
+- `?id=1'` 报错
+
+- `?id=1' %23` 报错
+
+这时仔细观察输入 `?id=1'` 时的报错信息，与Less-1相比，多了一个括号
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/DZ%DWK0PIHH}MP]N)8_FKK9.png?raw=true">
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/CWIE@{I)CMFD(6LH]SLJMU0.png?raw=true">
+
+因此在构建语句的时候，也需要把括号考虑在内，输入 `?id=1') %23` 成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/[DZI}XV{9$~WU[A(2]025BX.png?raw=true">
+
+下面过程和Less-1一样，省略
+
+*注：此题注入语句为 `?id=0') <SQL Injection Statement> %23`* 
+
+### Less-4
 
