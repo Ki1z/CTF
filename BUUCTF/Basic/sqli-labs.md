@@ -376,9 +376,59 @@
 
 单引号加括号
 
+*注：注入语句为 `1') [Sql Injection Statement] #`*
+
 ### Less-14
 
 双引号闭合
 
+*注：注入语句为 `1" [Sql Injection Statement] #`*
+
 ### Less-15
+
+输入 `1'` ， `1"` ， `1 and 1=1` 等均显示登陆失败
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/UK%JKCDKKZI~[%UN{DAMZF7.png?raw=true">
+
+输入 `1' or 1=1 #` 提示登录成功
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/N9H5~L`ETU6PZVPZ1A~8E20.png?raw=true">
+
+确定存在注入点，字符型注入，单引号闭合，没有报错信息，但是可以使用登陆成功的图片进行参考，进行布尔盲注。过程省略，直接公布使用sqlmap查询到的结果。
+
+查询数据库名
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/CHO1KZ(~O0GUVSC0OODP[CB.png?raw=true">
+
+查询所有表名
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/VGPBRWIN4H@E[6XQ58VZ07M.png?raw=true">
+
+查询users表下的所有字段名
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/N)`C@BC83E[R0_RO_FVEY$L.png?raw=true">
+
+查询字段username和password的内容
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/)T4F@I}(7UX7P4IYDOQA}HC.png?raw=true">
+
+*注：注入语句为 `1' [Sql Injection Statement] #`*
+
+### Less-16
+
+双引号加括号，布尔盲注
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/SC9_11F_R]USZ7AV37_$F$W.png?raw=true">
+
+*注：注入语句为 `1") [Sql Injection Statement] #`*
+
+### Less-17
+
+Less-17的页面和之前不同，是一个密码更改的页面
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/NI9S@RZOX`_[UQVR7F5S4)V.png?raw=true">
+
+无论输入注入语句，都没有报错信息，且会被嘲讽
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/S5](]DQT490GF%%1(3`[[QY.png?raw=true">
 
