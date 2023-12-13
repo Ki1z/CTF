@@ -536,6 +536,60 @@ Less-17的页面和之前不同，是一个密码更改的页面
 
 #### Group By
 
+group by报错注入相较于其他几个报错注入有一定难度，下面作详细解释。先来说说 `rand()` , `floor()` , `count()` , `group by`
 
+**Rand()**
+
+`rand()` 函数的作用是随机产生一个随机数表，并列行输出随机数
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/FD`HQ0_A[W%1{~@AZ9EG_MH.png?raw=true">
+
+`rand(seed)` 的括号中间还可以使用种子，每个种子对应一个随机数表，相同的种子产生的随机数表一定相同
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/S)HJEV_%)]}%$WUAQM([)92.png?raw=true">
+
+**Floor()**
+
+`floor()` 函数的作用是向下取整，即断尾
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/2W}RE%{9LIF(FN545O_A6NN.png?raw=true">
+
+如果我们将 `rand()` 和 `floor()` 结合使用，就可以得到一串确定的0和1数字表
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/9LM`}_GQIW@ML00KXD4QJ(8.png?raw=true">
+
+**Count()**
+
+`count()` 函数的作用是计算指定分组的列数量
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/[YKF_H[)PU@P`L6RU4_B%T4.png?raw=true">
+
+**Group by**
+
+`group by` 子句在<a href="https://github.com/Ki1z/PHP-Study-Notes/blob/main/MySQL%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0.md">MySQL笔记</a>里有详细的解释，这里简单复习一下。 `group by` 主要用来对数据进行分组
+
+未分组
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/)KA@[G16PSEHJU9XA2A@3Z4.png?raw=true">
+
+根据性别分组
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/0%O4E}$A)2`Z2(E1K8LCP80.png?raw=true">
+
+根据id进行分组
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/Y1ETNERP}]YTK~V$15E7S]A.png?raw=true">
+
+从上两张图可以看出根据id分组并没有效果，而根据性别分组却只有两个结果。因为group by实际上是返回每组的第一个查询结果，通过 `count()` 就可以看出来
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/EMS6MYNQXXOZ1IJ78YEV%7H.png?raw=true">
+
+`group by` 不仅可以指定字段进行分组，还可以使用其他值
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/YC`TV]B@]K71~R@AJ8I`RZ4.png?raw=true">
+
+这里将student表根据"id"进行分组，通过count可以知道总共有13条查询结果。下面通过分析group by的原理来探讨一下为什么会出现这种情况
+
+- 使用id进行group by分组时，会依次取出表中的每个记录并创建一个临时表，表中有两个字段，一个是id，另一个则是count。group by后面的字段就是该表的主键，每取出一个结果，如果临时表里已经拥有了该主键，那么count + 1，如果临时表中不存在该主键，则将该主键插入到临时表中。现在模拟一下使用id进行分组，字段id下的值作为主键，首先取得第一条结果，结果中有主键字段，临时表中没有主键01，则插入这条结果；然后取得第二条结果，结果中有主键字段，临时表中没有主键02，则插入这条结果......以此类推，13条结果的id都不一样，则分组的结果也会是13条。
 
 ### Less-18
