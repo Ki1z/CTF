@@ -4,9 +4,7 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/K)GB)Y$K0]X7S9AW)_AVDY3.png?raw=true">
 
-## Page-1
-
-### Less-1
+## Less-1
 
 打开网页，什么都没有，屏幕中间提示我们输入id作为参数
 
@@ -118,7 +116,7 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/_RWECF[QFCL{[P$QO2IQ5CP.png?raw=true">
 
-### Less-2
+## Less-2
 
 封面和Less-1一样，先开始判断注入点，输入 `?id=1 and 1=1` ，成功
 
@@ -140,7 +138,7 @@
 
 *注：此题注入语句为 `?id=0 <SQL Injection Statement>`* 
 
-### Less-3
+## Less-3
 
 开始判断注入点，下面直接公布结论
 
@@ -166,7 +164,7 @@
 
 *注：此题注入语句为 `?id=0') <SQL Injection Statement> %23`* 
 
-### Less-4
+## Less-4
 
 使用 `1 and 1=1` ， `1 and 1=2` ， `1'` 均无报错，考虑可能是双引号闭合，使用双引号进行尝试
 
@@ -180,7 +178,7 @@
 
 *注：此题注入语句为 `?id=0") <SQL Injection Statement> %23`* 
 
-### Less-5
+## Less-5
 
 根据报错信息，可以确定本题为字符型注入
 
@@ -310,7 +308,7 @@
 
 *注：注入语句为 `?id=1' [Sql Injection Statement] %23`*
 
-### Less-6
+## Less-6
 
 和Less-5一样，根据报错信息，使用双引号即可
 
@@ -318,7 +316,7 @@
 
 *注：注入语句为 `?id=1" [Sql Injection Statement] %23`*
 
-### Less-7
+## Less-7
 
 输入 `1'` , `1' %23` 报错， `1"` 不报错，确定是单引号闭合，但是没有报错提醒
 
@@ -332,7 +330,7 @@
 
 *注：注入语句为 `?id=1')) [Sql Injection Statement] %23`*
 
-### Less-8
+## Less-8
 
 和Less-5一样，只是报错没有任何显示，但是不报错有显示
 
@@ -342,7 +340,7 @@
 
 *注：注入语句为 `?id=1' [Sql Injection Statement] %23`*
 
-### Less-9
+## Less-9
 
 无论输入什么页面都不变化，进行时间盲注，先判断注入类型
 
@@ -368,7 +366,7 @@
 
 *注：注入语句为 `?id=1' if([Sql Injection Statement],sleep(time),1) %23`*
 
-### Less-10
+## Less-10
 
 使用 `?id=1' and if(1=1,sleep(5),1) %23` 不睡眠，考虑是双引号闭合
 
@@ -380,7 +378,7 @@
 
 *注：注入语句为 `?id=1" if([Sql Injection Statement],sleep(time),1) %23`*
 
-### Less-11
+## Less-11
 
 出现一个登录页面，登录错误时出现一个图片
 
@@ -394,7 +392,7 @@
 
 *注：注入语句为 `1' [Sql Injection Statement] #`*
 
-### Less-12
+## Less-12
 
 把Less-11的单引号改成双引号加括号
 
@@ -402,19 +400,19 @@
 
 *注：注入语句为 `1") [Sql Injection Statement] #`*
 
-### Less-13
+## Less-13
 
 单引号加括号
 
 *注：注入语句为 `1') [Sql Injection Statement] #`*
 
-### Less-14
+## Less-14
 
 双引号闭合
 
 *注：注入语句为 `1" [Sql Injection Statement] #`*
 
-### Less-15
+## Less-15
 
 输入 `1'` ， `1"` ， `1 and 1=1` 等均显示登陆失败
 
@@ -444,7 +442,7 @@
 
 *注：注入语句为 `1' [Sql Injection Statement] #`*
 
-### Less-16
+## Less-16
 
 双引号加括号，布尔盲注
 
@@ -452,7 +450,7 @@
 
 *注：注入语句为 `1") [Sql Injection Statement] #`*
 
-### Less-17
+## Less-17
 
 Less-17的页面和之前不同，是一个密码更改的页面
 
@@ -478,7 +476,7 @@ Less-17的页面和之前不同，是一个密码更改的页面
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/9_D6Z)(T68Y{QF[R1W7P4M8.png?raw=true">
 
-#### Extractvalue()
+### Extractvalue()
 
 同样没有报错信息，确定对username栏进行了过滤，且必须是数据库中存在的用户名，下面使用 `extractvalue()` 报错注入，先查询数据库
 
@@ -520,7 +518,7 @@ Less-17的页面和之前不同，是一个密码更改的页面
 
 *注：注入语句为 `1' and (extractvalue(1,concat(0x5c,<(Sql Injection Statement)>)))#`*
 
-#### Updatexml()
+### Updatexml()
 
 `updatexml()` 函数和 `extractvalue()` 类似，只是语法有所不同
 
@@ -534,7 +532,7 @@ Less-17的页面和之前不同，是一个密码更改的页面
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/BM%0MS$7%EJA~EN~V{H}LSK.png?raw=true">
 
-#### Group By
+### Group By
 
 group by报错注入相较于其他几个报错注入有一定难度，下面作详细解释。先来说说 `rand()` , `floor()` , `count()` , `group by`
 
@@ -652,7 +650,7 @@ select count(*) from information_schema.tables group by concat(database(),floor(
 
 *注：在使用了中间表后，必须使用别名才能使用*
 
-### Less-18
+## Less-18
 
 输入正确的用户名和密码，页面会显示User Agent，判断User Agent处可能存在sql语句，进行抓包，在User Agent后面添加一个单引号
 
@@ -672,7 +670,7 @@ select count(*) from information_schema.tables group by concat(database(),floor(
 
 以下步骤省略
 
-### Less-19
+## Less-19
 
 这次显示的是Referer
 
@@ -696,11 +694,43 @@ select count(*) from information_schema.tables group by concat(database(),floor(
 
 以下步骤省略
 
-### Less-20
+## Less-20
 
-这次显示的是cookie
+页面不显示cookie，跳过
 
-> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/QE1OBSWA%2XU86)9F_AQN~B.png?raw=true">
+## Less-21
 
-抓包加单引号
+报错Warning: Cannot modify header information，跳过
+
+## Less-22
+
+报错Warning: Cannot modify header information，跳过
+
+## Less-23
+
+回到第一题的形式，输入 `?id=1'` 报错，但是这一次注释符不管用了
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/9L]69DJ[Y}~3@B{3]YA6I8J.png?raw=true">
+
+猜测是注释符被过滤，但是可以利用单引号闭合来构造攻击语句
+
+```sql
+?id=1' or '1'='1
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/A9U_TRLS~3UOJ6TAN2@9I3D.png?raw=true">
+
+构造成功，下面就是判断字段数，这里的判断字段数也有所不同。直接使用联合查询，指定联合查询的字段数，若查询成功，则说明字段存在，反之则不存在
+
+```sql
+?id=0' union select 1,2,3 or '1'='1
+```
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/GP[7M}RUUWVSY1T)Z5ZGIS1.png?raw=true">
+
+从上图中可以看出，在判断字段数的同时，已经完成了确定了回显点，后续就是查询相关操作，以下步骤省略
+
+*注：此题注入语句为 `?id=0' [Sql Injection Statement] or '1'='1`*
+
+## Less-24
 
