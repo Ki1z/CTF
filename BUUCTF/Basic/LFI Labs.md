@@ -92,7 +92,7 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/H3)J1$GL42FE~EMETV~Z5(Q.png?raw=true">
 
-根据<a href="https://github.com/Ki1z/CTF/blob/main/BUUCTF/Basic/Upload-Labs-Linux.md">Upload-Labs</a>的方法，在后缀后加点、斜杠、空格等无效字符即可，但是由于BUUCTF使用Linux系统，无法演示效果
+根据<a href="https://github.com/Ki1z/CTF/blob/main/BUUCTF/Basic/Upload-Labs-Linux.md">Upload-Labs</a>的方法，在后缀后加点、斜杠、空格等无效字符即可，由于BUUCTF使用Linux系统，无法演示效果
 
 ## LFI-4
 
@@ -100,3 +100,42 @@
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/TB$]I4{5N%5OQ2AY}U6B`@O.png?raw=true">
 
+和LFI-2一样，后缀可以使用%00或者直接省略，前缀使用相对路径，但是这里因为有前缀 `class_` ，因此相对路径前要添加一个左斜杠，即 `/../../HDR-1/blue.php`
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/$7U3{2~RD140E2D0K}JIM]1.png?raw=true">
+
+## LFI-5
+
+观察报错信息没头绪，查看提示，发现是将 `../` 进行过滤
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/%FSF2FYI)B]RWCQZL)LU[{G.png?raw=true">
+
+可以通过套娃的方式（同Upload-Labs），即 `..`<b>`../`</b>`/..`<b>`../`</b>`/HDR-1/blue.php` ，仅加粗部分会被过滤，过滤完后依然是完整的相对路径
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/V~UUD`NXB4[SH6V6VS~UUEO.png?raw=true">
+
+## LFI-6
+
+同LFI-1一样，直接输入 `../HDR-1/blue.php` 即可
+
+## LFI-7
+
+同LFI-2
+
+## LFI-8
+
+同LFI-3
+
+## LFI-9
+
+同LFI-4
+
+## LFI-10
+
+同LFI-5
+
+## LFI-11
+
+无论输入报错信息都不更改
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/R%1J7N7~}(%}`5{FB[2CCAA.png?raw=true">
