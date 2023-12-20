@@ -139,3 +139,12 @@
 无论输入报错信息都不更改
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/R%1J7N7~}(%}`5{FB[2CCAA.png?raw=true">
+
+*从本题开始测试平台转为本机*
+
+查看源代码，发现实际POST的参数并不是我们看到的输入框内的参数，而是一个隐藏的参数
+
+> <img src="https://github.com/Ki1z/CTF/blob/main/IMG/ND9X${CK0PRGVA6}3ULF8KY.png?raw=true">
+
+通过抓包将参数名改为stylepath
+
