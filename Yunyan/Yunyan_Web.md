@@ -1,6 +1,6 @@
 # 云演Web题库
 
-`更新时间 2024-4-16`
+`更新时间 2024-4-21`
 
 ---
 
@@ -56,4 +56,123 @@ echo 'flag{**********}';
 
 > <img src="./IMG/Screenshot 2024-04-16 200730.png">
 
-# 
+# 单身20年的手速
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/7`
+
+考点：抓包
+
+- 进入网页，有个超链接，点击后无任何有效信息，同样存在中间页
+
+> <img src="./IMG/Screenshot 2024-04-16 194048.png">
+
+- 抓包，发送到Repeater中，在响应体中发现了flag
+
+> <img src="./IMG/Screenshot 2024-04-21 183821.png">
+
+# ereg
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/10`
+
+考点：PHP代码审计，ereg()
+
+- 进入网页，啥也没有，查看网页源代码，同样啥也没有，在url栏输入/robots.txt，跳出了一段php代码，猜测应该是主页源代码，下面开始代码审计
+
+```php
+//存在以GET方式传入的参数password
+if (isset ($_GET['password'])) {
+        //password参数包含了a-z，A-Z和0-9以外的字符
+	if (ereg ("^[a-zA-Z0-9]+$", $_GET['password']) === FALSE)
+	{
+		echo '<p>Your password must be alphanumeric</p>';
+	
+    }     //password参数的长度小于8，并且大于9999999
+	  else if (strlen($_GET['password']) < 8 && $_GET['password'] > 9999999)
+	{    
+                //password中存在*-*
+		if (strpos ($_GET['password'], '*-*') !== FALSE)
+		{   //返回flag
+			die('Flag: ' . $flag);
+		}
+		else
+		{
+			echo('<p>*-* have not been found</p>');
+		}
+	}
+	else
+	{
+		echo '<p>Invalid password</p>';
+	}
+}
+```
+
+- 根据代码审计的结果，需要构建一个以GET方式传入的参数password，这里使用url传参，该参数需要大于大于9999999，则使用科学计数法1e8，同时在不允许使用特殊字符的情况下需要包含*-*，使用%00绕过，最终得到payload为 `1e8%00*-*`
+
+> <img src="./IMG/Screenshot 2024-04-21 192230.png">
+
+# intval
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/13`
+
+考点：PHP代码审计
+
+- 直接开始代码审计
+
+```php
+<?php
+//不存在以GET形式传递的参数source
+if(!isset($_GET['source'])){
+    highlight_file('index.php');
+    die();
+}
+include('flag.php');
+//用4个变量接收了四个以GET方式传递的参数f，l，a，g
+$key1 = $_GET['f'];
+$key2 = $_GET['l'];
+$key3 = $_GET['a'];
+$key4 = $_GET['g'];
+//参数f，l，a，g均存在
+if(isset($key1)&&isset($key2)&&isset($key3)&&isset($key4))
+{   //f的值大于1或者小于0
+    if(intval($key1) > 1 || intval($key1) < 0)
+        die("key1 is error.");
+    //f的值小于1
+    elseif(intval(intval($key1)) < 1)
+    {   //f的值等于1
+        if($key1 == 1){
+            //l的值小于1
+            if($key2 < 1){
+                die("key2 is error.");
+            //l的值大于等于1
+            }else{
+                //f + l大于1
+                if(intval($key2 + $key1) > 1){
+                    die("key is error.");
+                //f + l小于等于1
+                }else{
+                    //赋值运算符优先级大于and
+                    $check = is_numeric($key3) and is_numeric($key4);
+                    //a的值不是数字
+                    if(!$check){
+                        die("key3 or key4 is error.");
+                    //g不能为数字
+                    }elseif(!(is_numeric($key3) and is_numeric($key4))){
+                        $key3 = $flag;
+                        $key4 = $redpacket;
+                    }
+                    die("flag:".$key3."<br>"."支付宝红包口令".$key4);
+                }
+            }
+        }
+        else
+            die("key1 is error.");
+    }
+    else
+        die("key1 is error.");
+}
+?>
+```
+
+- 根据代码审计结果，需要通过GET方式传入5个参数，这里使用url传参，传入的参数为source, f, l, a, g，source的取值任意，f小于等于1，则f为0x1，l加上f需要小于等于1，且l需要大于等于1，则l取值为PHP中int的最大值9223372036854775807，加上1得到int最小值，a的值必须为数字，随便取值即可，g的值不能为数字，留空即可，因此最终得到的payload为 `source=&f=0x1&l=9223372036854775807&a=1&g=`
+
+> <img src="./IMG/Screenshot 2024-04-21 200356.png">
