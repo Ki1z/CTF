@@ -1,6 +1,6 @@
 # 云演Web题库
 
-`更新时间 2024-4-21`
+`更新时间 2024-4-25`
 
 ---
 
@@ -106,7 +106,7 @@ if (isset ($_GET['password'])) {
 }
 ```
 
-- 根据代码审计的结果，需要构建一个以GET方式传入的参数password，这里使用url传参，该参数需要大于大于9999999，则使用科学计数法1e8，同时在不允许使用特殊字符的情况下需要包含*-*，使用%00绕过，最终得到payload为 `1e8%00*-*`
+- 根据代码审计的结果，需要构建一个以GET方式传入的参数password，这里使用url传参，该参数需要大于9999999，长度小于8，则使用科学计数法1e8，同时在不允许使用特殊字符的情况下需要包含*-*，使用%00绕过，最终得到payload为 `1e8%00*-*`
 
 > <img src="./IMG/Screenshot 2024-04-21 192230.png">
 
@@ -136,7 +136,7 @@ if(isset($key1)&&isset($key2)&&isset($key3)&&isset($key4))
 {   //f的值大于1或者小于0
     if(intval($key1) > 1 || intval($key1) < 0)
         die("key1 is error.");
-    //f的值小于1
+    //intval(f)的值小于1
     elseif(intval(intval($key1)) < 1)
     {   //f的值等于1
         if($key1 == 1){
@@ -173,6 +173,167 @@ if(isset($key1)&&isset($key2)&&isset($key3)&&isset($key4))
 ?>
 ```
 
-- 根据代码审计结果，需要通过GET方式传入5个参数，这里使用url传参，传入的参数为source, f, l, a, g，source的取值任意，f小于等于1，则f为0x1，l加上f需要小于等于1，且l需要大于等于1，则l取值为PHP中int的最大值9223372036854775807，加上1得到int最小值，a的值必须为数字，随便取值即可，g的值不能为数字，留空即可，因此最终得到的payload为 `source=&f=0x1&l=9223372036854775807&a=1&g=`
+- 根据代码审计结果，需要通过GET方式传入5个参数，这里使用url传参，传入的参数为source, f, l, a, g，source的取值任意，intval(f)小于1，f等于1，则f为0x1，l加上f需要小于等于1，且l需要大于等于1，则l取值为PHP中int的最大值9223372036854775807，加上1得到int最小值，a的值必须为数字，随便取值即可，g的值不能为数字，留空即可，因此最终得到的payload为 `source=&f=0x1&l=9223372036854775807&a=1&g=`
 
 > <img src="./IMG/Screenshot 2024-04-21 200356.png">
+
+# Blog
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/34`
+
+考点：PHP代码审计
+
+- 进入网页，是一个登录页面，尝试一些弱密码均无效，查看源代码
+
+> <img src="./IMG/Screenshot 2024-04-25 163816.png">
+
+- 进入对应url，发现超链接，点击进入，再打开源代码，发现txt文件
+
+> <img src="./IMG/Screenshot 2024-04-25 164102.png">
+
+- 进入txt文件，出现几行PHP代码，猜测是login.php的代码，开始代码审计
+
+```php
+<?php
+session_start();
+$_SESSION['pwd']=time();
+//遍历$_REQUEST数组中的下标，取别名为v
+foreach(array_keys($_REQUEST) as $v){
+        //将v的值，也就是_REQUEST中的某一个下标赋值给key
+        $key = $v;
+        //将下标名定义为一个变量，储存的值为_REQUEST数组中下表明对应的值
+        //举例：$_REQUEST['sub'] = 1
+        //      $key = 'sub'
+        //      $sub = 1
+        $$key = $_REQUEST[$v];
+    }
+//存在$_POST['password']
+if (isset ($_POST['password'])) {
+    //需要$_SESSION['pwd'] == $pwd
+    if ($_SESSION['pwd'] == $pwd)
+        die('Flag:'.$flag);
+    else{
+        print '<p>猜测错误.</p>';
+        $_SESSION['pwd']=time().time();
+    }
+}
+```
+
+- 这道题需要逆向思维，我们需要构建\$_SESSION['pwd'] == \$pwd，由上文可知，任何\$_REQUEST中的下标，都会创建一个对应的变量，变量的值与\$_REQUEST中的值相同，因此payload为 `_SESSION['pwd']=1&pwd=1&password=`
+
+> <img src="./IMG/Screenshot 2024-04-25 170437.png">
+
+# 后台管理系统
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/36`
+
+考点：SQL约束攻击
+
+- 打开网页，出现一个登录页面，点击注册，用户名admin，密码Abc123456，提示用户已存在
+
+> <img src="./IMG/Screenshot 2024-04-25 171034.png">
+
+- 将用户名改为 admin$~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~$(很多空格)，密码输入Abc123456，提示注册成功
+
+> <img src="./IMG/Screenshot 2024-04-25 171515.png">
+
+- 登录得到flag
+
+> <img src="./IMG/Screenshot 2024-04-25 171606.png">
+
+# php_for_fun
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/37`
+
+考点：PHP代码审计
+
+- 打开网页，只显示了have a fun!!，查看源代码，也只有have a fun!!，查看响应头，发现了26966dc52e85af40f59b4fe73d8c323a.txt
+
+> <img src="./IMG/Screenshot 2024-04-25 172251.png">
+
+- 查看txt文件，删除乱码注释，开始代码审计
+
+```php
+<?php
+ 
+$info = ""; 
+$req = [];
+$flag="SSCTF{areyoukiddingmeï¼Ÿ}";
+
+ini_set("display_error", false);
+error_reporting(0);
+//存在$_GET['number']
+if(!isset($_GET['number'])){
+   header("hint:26966dc52e85af40f59b4fe73d8c323a.txt");
+ 
+   die("have a fun!!");
+ 
+}
+//遍历[$_GET, $_POST]，取别名为$global_var
+foreach([$_GET, $_POST] as $global_var) {
+    //遍历$global_var，下标为$key，值为$value
+    foreach($global_var as $key => $value) { 
+        //移除value两边的空格
+        $value = trim($value);
+        //value为字符串，然后将value中的双引号前添加反斜杠，并赋值给$req[$key]
+        is_string($value) && $req[$key] = addslashes($value);
+    }
+}
+function is_palindrome_number($number) { 
+    $number = strval($number);
+    $i = 0; 
+    $j = strlen($number) - 1;
+    while($i < $j) { 
+        if($number[$i] !== $number[$j]) { 
+            return false; 
+        } 
+        $i++; 
+        $j--; 
+    } 
+    return true; 
+} 
+//$_REQUEST['number']需要是一个字符串
+if(is_numeric($_REQUEST['number']))
+{
+
+   $info="sorry, you cann't input a number!";
+ 
+}
+//$req['number']的值需要等于其int值
+elseif($req['number']!=strval(intval($req['number'])))
+{
+
+    header("hint2:a58658b92c386d17848bfab096d9e634.txt");
+     $info = "number must be equal to it's integer!! ";  
+ 
+}
+else
+{
+    //$value1是$req['number']的int值
+     $value1 = intval($req["number"]);
+    //$value2是$req['number']的int值的反转值
+     $value2 = intval(strrev($req["number"]));  
+    //req['number']的int值是一个回文数字
+     if($value1!=$value2){
+         header("hint3:cb42920bc738a35318e3109fc5b51dc6.txt");
+          $info="no, this is not a palindrome number!";
+     }
+     else
+     {
+        //$_REQUEST['number']本身不能为回文字符串
+          if(is_palindrome_number($req["number"])){
+            header("hint4:07a9fe2942fe2e1e1db77aaa525e51d0.txt");
+              $info = "nice! {$value1} is a palindrome number!"; 
+          }
+          else
+          {
+             $info=$flag;
+          }
+     }
+ 
+}
+ 
+echo $info;
+```
+
+- 根据审计结果，需要通过GET方式传入一个参数number，number中的任何双引号前面都会添加反斜杠，
