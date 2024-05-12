@@ -1,6 +1,6 @@
 # 云演Web题库
 
-`更新时间 2024-5-7`
+`更新时间 2024-5-12`
 
 ---
 
@@ -521,14 +521,69 @@ echo PD9waHAgZWNobyBzaGVsbF9leGVjKCRfR0VUWzFdKTs=|base64 -d>a.php
 
 > <img src="./IMG/Screenshot 2024-05-07 193023.png">
 
-# Browser
+# RCE ME
 
-`https://www.yunyansec.com/#/experiment/ctfdetail/58`
+`https://www.yunyansec.com/#/experiment/ctfdetail/102`
 
-考点：HTTP协议
+考点：命令执行，PHP代码审计
 
-- 进入网页，提示 You must use [CTF_coffee] to view this page! Other web broswer will be denied!。推测需要更改浏览器UserAgent
+- 进入网页，显示This is the command practice，经过测试后发现屏蔽了很多关键字，尝试 `more index.php` 成功，并在网页源代码看到index.php的源码
 
-> <img src="./IMG/Screenshot 2024-05-07 193556.png">
+> <img src="./IMG/Screenshot 2024-05-08 183854.png">
 
-- 又提示 Go away! Attacker! This page is only for local client!
+- 开始代码审计
+
+```php
+<?php
+$cmd=$_POST['cmd'];
+$blacklist="cat|\/|cd|flag|curl|{|\(|'|\"|echo|\\\\|&|grep|base64";
+$arr=explode('|',$blacklist);
+foreach ($arr as $key => $value) {
+    if (preg_match("/$value/i", $cmd)) {
+        exit('hacker~~~'); 
+}
+}
+system($cmd);
+?>
+```
+
+- 从代码可以看出，网页设置了一系列黑名单，并使用 `preg_match()` 函数判断传入的参数是否包含黑名单，仔细观察，占位符 `*` 没有被屏蔽，因此payload为 `more fl*g.php`
+
+# php黑魔法
+
+`https://www.yunyansec.com/#/experiment/ctfdetail/113`
+
+考点：PHP代码审计，ord()函数
+
+- 进入页面，开始代码审计
+
+```php
+<?php
+highlight_file('2.php');
+function noother_says_correct($number)
+{
+    $one = ord('1');
+    $nine = ord('9');
+    for ($i = 0; $i < strlen($number); $i++)
+    {
+        $digit = ord($number{$i});
+        if ( ($digit >= $one) && ($digit <= $nine) )
+        {
+            return false;
+        }
+    }
+    return $number == '54975581388';
+}
+
+$flag='{**********}';
+if(noother_says_correct($_GET['key']))
+    echo "flag is ".$flag;
+else
+    echo 'access denied';
+?>
+```
+
+- 这个程序是将输入的值逐个转换为ascii码，与1-9的ascii码进行比较，不能出现1-9，又要等于54975581388，解决方法即是将54975581388转换为16进制，转换为16进制后得到ccccccccc，刚好没有出现数字0-9
+
+> <img src="./IMG/Screenshot 2024-05-08 194048.png">
+
