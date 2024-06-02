@@ -1,6 +1,6 @@
 # Web常用知识点摘录
 
-`更新时间 2024-5-21`
+`更新时间 2024-6-2`
 
 ---
 
@@ -130,9 +130,13 @@ strlen(arg)可以返回arg的字符串长度
 
 scandir(arg)函数可以扫描路径arg内的所有目录
 
-## file_get_content()
+## file_get_contents()
 
-file_get_content(arg)函数可以读取文件arg的所有内容
+file_get_contents(arg)函数可以读取文件arg的所有内容
+
+### 绕过
+
+file_get_contents()函数可以使用伪协议绕过，对于POST方式使用 `php://input` ，对于GET方式则使用 `data://`
 
 ## chr()
 
@@ -331,3 +335,22 @@ data://与php://类似，但是data://可以直接执行php代码
 - gif
 
 `474946383961` 或 `GIF89a`
+
+## MIME类型
+
+题目可能对MIME类型进行了限制，可以尝试将其改为 `image/png` ， `image/jpg` 等来进行绕过
+
+---
+
+# 模板注入
+
+模板注入指的是某些网站建站所使用的模板本身存在漏洞，攻击者就可以使用该漏洞来对网站进行注入攻击，最常见的攻击类型是通过访问模板内部的对象来得到敏感信息
+
+## Tornado
+
+Tornado是一个以Python为基础的网站模板
+
+### handler.settings
+
+handler.settings是Tornado模板中储存环境配置的对象，一般的Tornado题目均会访问该对象来获取信息
+
