@@ -1,6 +1,6 @@
 # Web常用知识点摘录
 
-`更新时间 2024-6-2`
+`更新时间 2024-6-4`
 
 ---
 
@@ -114,6 +114,10 @@ strstr(arg1, arg2)函数可以在arg1中查找arg2，返回除去arg2的剩余�
 
 在某个对象被销毁时，会自动执行其内部的 `__destruct()` 方法
 
+## __construct()
+
+在对象被创建时，会自动执行内部的 `__construct()` 方法
+
 ## strlen()
 
 strlen(arg)可以返回arg的字符串长度
@@ -138,6 +142,10 @@ file_get_contents(arg)函数可以读取文件arg的所有内容
 
 file_get_contents()函数可以使用伪协议绕过，对于POST方式使用 `php://input` ，对于GET方式则使用 `data://`
 
+## file_put_contents()
+
+file_put_contents(arg1, arg2)函数可以将字符串arg2写入文件arg1中
+
 ## chr()
 
 chr(arg)函数可以返回ascii码arg对应的字符
@@ -145,6 +153,26 @@ chr(arg)函数可以返回ascii码arg对应的字符
 --------------------------------------------------------
 
 # SQL注入
+
+## 报错注入
+
+报错注入是一种常见的SQL注入方式，一般使用两个函数 `extractvalue()` 和 `updatexml()` ，攻击原理是通过两个函数的报错信息将后台的敏感信息暴露给攻击者，达到攻击目的
+
+### extractvalue()
+
+`extractvalue(arg1, arg2)` 函数有两个参数，arg1是xml文档对象的名称，数据类型为string，arg2是Xpath_string字符串，数据类型为string，且必须满足Xpath格式，若arg2格式错误，则会产生报错
+
+攻击时一般arg1为任意字符，arg2为 `concat()` 函数构建的攻击语句
+
+`id = 1' {or | and} extractvalue(1, concat(0x7e, <inject statement>))#`
+
+### updatexml()
+
+`updatexml(arg1, arg2, arg3)` 函数有三个参数，arg1是xml文档对象的名称，arg2是Xpath_string字符串，arg3也是Xpath_string字符串，用于替换arg1文档中的arg2，当arg2或者arg3格式错误，则会产生报错
+
+攻击时一般arg1、arg3为任意字符，arg2为 `concat()` 函数构建的攻击语句
+
+`id = 1' {or | and} updatexml(1, concat(0x7e, <inject statement>), 1)#`
 
 ## SQL约束攻击
 
@@ -218,12 +246,16 @@ admin -- a
 admin' #
 
 admin' -- a
+
+1'or((1)like(1))#
 ```
+
+*第三项特别用于空格被过滤的情况*
 
 - 双引号字符串型万能密码
 
 ```
-admin” #
+admin" #
 
 admin" -- a
 ```
@@ -244,7 +276,7 @@ admin" -- a
 
 \<command>内容可以为16进制，但是需要添加 `0x`
 
-# handler
+## handler
 
 handler是Mysql独有的查询字段数据的命令，分为打开，读取和关闭三步
 
@@ -254,9 +286,13 @@ handler是Mysql独有的查询字段数据的命令，分为打开，读取和�
 
 `handler <table> close;`
 
-# ffifdyop
+## ffifdyop
 
 ffifdyop是一个神奇的字符串，常用于php中函数md5()的绕过，该字符串在经过md5()加密后，转换为字符串为 `'or'66�]��!r,��b` ，在SQL注入中相当于 `'' or 1` ，这就可以导致查询语句中的 `where` 失效，实现SQL注入
+
+## right()
+
+`right(arg1, arg2)` 函数的作用是从右边开始截取arg1中指定长度arg2的内容，常用于Sql注入中限制回显长度的情况
 
 -----------------------------------------------------------
 
@@ -338,7 +374,7 @@ data://与php://类似，但是data://可以直接执行php代码
 
 ## MIME类型
 
-题目可能对MIME类型进行了限制，可以尝试将其改为 `image/png` ， `image/jpg` 等来进行绕过
+题目可能对MIME类型进行了限制，可以尝试将其改为 `image/png` ， `image/jpeg` 等来进行绕过
 
 ---
 
@@ -354,3 +390,8 @@ Tornado是一个以Python为基础的网站模板
 
 handler.settings是Tornado模板中储存环境配置的对象，一般的Tornado题目均会访问该对象来获取信息
 
+# .user.ini
+
+.user.ini是一个php用户配置文件，在该配置文件存在时，php会根据文件中的相关配置做出相应调整，一般在文件上传攻击中用作包含图片马使用
+
+`auto_prepend_file=<Trojan Name>`
