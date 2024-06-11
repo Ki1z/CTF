@@ -1,6 +1,6 @@
 # Web常用知识点摘录
 
-`更新时间 2024-6-4`
+`更新时间 2024-6-11`
 
 ---
 
@@ -298,6 +298,18 @@ ffifdyop是一个神奇的字符串，常用于php中函数md5()的绕过，该�
 
 `right(arg1, arg2)` 函数的作用是从右边开始截取arg1中指定长度arg2的内容，常用于Sql注入中限制回显长度的情况
 
+## mid()
+
+`mid(arg1, arg2, arg3)` 函数的作用是分割序列arg1，从arg2开始，最小为1，步长为arg3
+
+## /**/
+
+在sql注入中，例如 `union select` 等语句中的空格被过滤，可以使用 `/**/` 代替，如 `union/**/select`
+
+## load_file()
+
+SQL中存在函数 `load_file()` 可以直接读取文件信息，某些情况下，该函数可能没有被过滤， `load_file()` 函数使用绝对路径
+
 -----------------------------------------------------------
 
 # RCE
@@ -380,6 +392,12 @@ data://与php://类似，但是data://可以直接执行php代码
 
 题目可能对MIME类型进行了限制，可以尝试将其改为 `image/png` ， `image/jpeg` 等来进行绕过
 
+## .user.ini
+
+.user.ini是一个php用户配置文件，在该配置文件存在时，php会根据文件中的相关配置做出相应调整，一般在文件上传攻击中用作包含图片马使用
+
+`auto_prepend_file=<Trojan Name>`
+
 ---
 
 # 模板注入
@@ -394,8 +412,24 @@ Tornado是一个以Python为基础的网站模板
 
 handler.settings是Tornado模板中储存环境配置的对象，一般的Tornado题目均会访问该对象来获取信息
 
-# .user.ini
+---
 
-.user.ini是一个php用户配置文件，在该配置文件存在时，php会根据文件中的相关配置做出相应调整，一般在文件上传攻击中用作包含图片马使用
+# 源码泄露
 
-`auto_prepend_file=<Trojan Name>`
+## WEB-INF泄露
+
+通常一些web应用我们会使用多个web服务器搭配使用，解决其中的一个web服务器的性能缺陷以及做均衡负载的优点和完成一些分层结构的安全策略等。在使用这种架构的时候，由于对静态资源的目录或文件的映射配置不当，可能会引发一些的安全问题，导致web.xml等文件能够被读取
+
+### 常见WEB-INF文件
+
+`/WEB-INF/web.xml` ：Web应用程序配置文件，描述了servlet和其他的应用组件配置及命名规则
+
+`/WEB-INF/classes/` ：含了站点所有用的 class 文件，包括servlet class和非servlet class，他们不能包含在 .jar文件中
+
+`/WEB-INF/lib/` ：存放web应用需要的各种JAR文件，放置仅在这个应用中要求使用的jar文件,如数据库驱动jar文件
+
+`/WEB-INF/src/` ：源码目录，按照包名结构放置各个java文件。
+
+`/WEB-INF/database.properties` ：数据库配置文件
+
+*一般文件的访问通过POST*
