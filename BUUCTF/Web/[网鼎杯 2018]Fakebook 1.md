@@ -40,9 +40,11 @@
 
 > <img src="../../IMG3/Screenshot 2024-06-11 192335.png">
 
-- 可以看到一串序列化字符串 `O:8:"UserInfo":3:{s:4:"name";s:1:"a";s:3:"age";i:0;s:4:"blog";s:5:"a.com";}` ，字符串的内容刚好是我们新建的账户a中的内容。题目到这里似乎陷入了僵局。
+- 可以看到一串序列化字符串 `O:8:"UserInfo":3:{s:4:"name";s:1:"a";s:3:"age";i:0;s:4:"blog";s:5:"a.com";}` ，字符串的内容刚好是我们新建的账户a中的内容。题目到这里似乎陷入了僵局。扫目录，发现了 `flag.php`
 
-- 经过各种尝试，我们发现了 `flag.php` ，和 `view.php` 在同一目录下，刚才sql注入时暴露了 `view.php` 的绝对路径，也就是说可能存在某个注入，让我们可以访问 `flag.php` 中的内容，查看网页源码，在blog一行发现了可疑之处
+> <img src="../../IMG3/Screenshot 2024-06-13 201941.png">
+
+- `flag.php` ，和 `view.php` 在同一目录下，刚才sql注入时暴露了 `view.php` 的绝对路径，也就是说可能存在某个注入，让我们可以访问 `flag.php` 中的内容，查看网页源码，在blog一行发现了可疑之处
 
 > <img src="../../IMG3/Screenshot 2024-06-11 202114.png">
 

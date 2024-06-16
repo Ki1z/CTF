@@ -1,6 +1,6 @@
 # Web常用知识点摘录
 
-`更新时间 2024-6-11`
+`更新时间 2024-6-16`
 
 ---
 
@@ -400,7 +400,7 @@ data://与php://类似，但是data://可以直接执行php代码
 
 ---
 
-# 模板注入
+# SSTI 模板注入
 
 模板注入指的是某些网站建站所使用的模板本身存在漏洞，攻击者就可以使用该漏洞来对网站进行注入攻击，最常见的攻击类型是通过访问模板内部的对象来得到敏感信息
 
@@ -411,6 +411,18 @@ Tornado是一个以Python为基础的网站模板
 ### handler.settings
 
 handler.settings是Tornado模板中储存环境配置的对象，一般的Tornado题目均会访问该对象来获取信息
+
+## Smarty
+
+Smarty是一个以PHP为基础的网站模板
+
+### {$smarty.version}.
+
+`{$smarty.version}` 可以查询smarty的版本
+
+### {if \<PHP code>}{/if}.
+
+`{if <PHP code>}{/if}`是smarty中的判断语句，if后面的内容以PHP代码形式执行
 
 ---
 
@@ -433,3 +445,11 @@ handler.settings是Tornado模板中储存环境配置的对象，一般的Tornad
 `/WEB-INF/database.properties` ：数据库配置文件
 
 *一般文件的访问通过POST*
+
+---
+
+# HTTP 标头
+
+## X-Forwarded-For
+
+请求头中的 `X-Forwarded-For` 用来表示http请求中的真实IP
